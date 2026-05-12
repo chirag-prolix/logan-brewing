@@ -1,0 +1,64 @@
+<section 
+  class="shop-merch-section"
+  style="background-image: url({{ section.settings.bg_image | image_url: width: 2000 }});"
+>
+  <div class="shop-merch-overlay"></div>
+
+  <div class="shop-merch-content">
+
+    {% if section.settings.heading != blank %}
+      <h2 class="shop-merch-heading">
+        {{ section.settings.heading }}
+      </h2>
+    {% endif %}
+
+    {% if section.settings.button_text != blank %}
+      <a 
+        href="{{ section.settings.button_link }}" 
+        class="btn {{ section.settings.button_class }}"
+      >
+        {{ section.settings.button_text }}
+      </a>
+    {% endif %}
+
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Custom Shop Merch",
+  "settings": [
+    {
+      "type": "image_picker",
+      "id": "bg_image",
+      "label": "Background Image"
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading Text"
+    },
+    {
+      "type": "text",
+      "id": "button_text",
+      "label": "Button Text"
+    },
+    {
+      "type": "url",
+      "id": "button_link",
+      "label": "Button Link"
+    },
+    {
+      "type": "text",
+      "id": "button_class",
+      "label": "Button CSS Class",
+      "info": "Add custom class name only (example: primary-btn)"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Custom Shop Merch"
+    }
+  ]
+}
+{% endschema %}

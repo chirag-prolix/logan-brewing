@@ -1,0 +1,141 @@
+{% comment %}
+  This section is used in the cart template to render /cart page with an
+  overview of the items in customer's cart.
+
+  https://shopify.dev/docs/storefronts/themes/architecture/templates/cart
+{% endcomment %}
+
+    
+    {% if cart.item_count == 0 %}
+
+      <div class="cart-page-empty empty-cart">
+        
+        <div class="crow-icon">
+          <img src="{{ 'crown.png' | asset_url }}" alt="">
+        </div>
+
+        <div class="cart-cross-icon-list">
+          <img src="{{ 'cross-red.svg' | asset_url }}" alt="">
+          <img src="{{ 'cross-red.svg' | asset_url }}" alt="">
+          <img src="{{ 'cross-red.svg' | asset_url }}" alt="">
+        </div>
+        <h2>Your cart is empty</h2>
+        <p>Looks like you haven’t added anything yet.</p>
+
+        <a href="/collections/shop-merch" class="primary-btn">
+          Continue Shopping
+        </a>
+
+      </div>
+
+    {% else %}
+    <div class="cart-page">
+      <div>
+        <h1 class="section-title">{{ 'cart.title' | t }}</h1>
+      </div>  
+      <form action="{{ routes.cart_url }}" method="post">
+
+        <div class="cart-layout">
+
+          <div class="cart-left">
+            {% for item in cart.items %}
+
+              <div class="cart-item">
+                <div class="cart-img">
+                  <img src="{{ item.image | image_url }}">
+                </div>
+
+                <div class="cart-details">
+                  <p class="cart-title">{{ item.product.title }}</p>
+                  {% unless item.variant.title == 'Default Title' %}
+                    <p class="cart-variant">{{ item.variant.title }}</p>
+                  {% endunless %}
+
+                  <div class="price-row">
+                      <p class="cart-line-price">
+                        {{ item.final_line_price | money }}
+                      </p>
+                      <div class="quantity-box">
+                          <button type="button" class="qty-minus">−</button>
+                          <input type="number" name="updates[]" value="{{ item.quantity }}" min="1" id="quantityInput">
+                          <button type="button" class="qty-plus">+</button>
+                      </div>
+                   </div>   
+
+                </div>
+                <a href="{{ item.url_to_remove }}" class="delete-btn"> <img src="{{ 'delete-icon.svg' | asset_url }}" alt=""></a>
+              </div>
+            {% endfor %}
+          </div>
+
+          <div class="cart-summary">
+
+            <h3 class="section-title">Order Summary</h3>
+
+            <div class="summary-line">
+              <span>Subtotal</span>
+              <span>{{ cart.total_price | money }}</span>
+            </div>
+
+            {% if cart.total_discounts > 0 %}
+            <div class="summary-line">
+              <span>Discount</span>
+              <span>- {{ cart.total_discounts | money }}</span>
+            </div>
+            {% endif %}
+
+            <div class="summary-total">
+              <span>Total</span>
+              <span>{{ cart.total_price | money }}</span>
+            </div>
+            
+            <div class="promo-box">
+              <input type="text" id="promoInput" placeholder="Enter promo code">
+              <button type="button" class="primary-btn" onclick="applyDiscount()">Apply</button>
+            </div> 
+
+            <div class="summary-btn-row">
+              <button type="submit" name="update" class="secondary-btn"> Update Cart </button>
+              <button type="submit" name="checkout" class="primary-btn"> Go to Checkout </button>
+            </div>
+          </div>
+        </div>
+        <div class="continue-shop-btn-row">
+            <a href="/collections/shop-merch" class="primary-btn">
+              Continue Shopping
+            </a>
+          </div>
+      </form>
+    </div>  
+
+{% endif %}
+
+
+{% schema %}
+{
+  "name": "t:general.cart",
+  "settings": []
+}
+{% endschema %}
+
+<script>
+    function applyDiscount() {
+      var code = document.getElementById("promoInput").value;
+      if(code){
+        window.location.href = "/discount/" + code + "?redirect=/checkout";
+      }
+    }
+
+  let qtyInput = document.getElementById("quantityInput");
+
+    document.querySelector(".qty-plus").addEventListener("click", function(){
+    qtyInput.value = parseInt(qtyInput.value) + 1;
+    });
+
+    document.querySelector(".qty-minus").addEventListener("click", function(){
+    if(parseInt(qtyInput.value) > 1){
+        qtyInput.value = parseInt(qtyInput.value) - 1;
+    }
+  });
+
+</script>

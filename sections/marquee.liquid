@@ -1,0 +1,99 @@
+<section class="marquee-wrapper">
+  <div class="marquee">
+    {% for block in section.blocks %}
+      <div class="marquee-item">
+        {{ block.settings.text }}
+      </div>
+    {% endfor %}
+  </div>
+</section>
+
+<style>
+
+.marquee-wrapper {
+  overflow: hidden;
+  padding: 22px 0;
+  width:100%;
+  border-bottom:1px solid var(--primary-color);
+}
+.marquee {
+  display: flex;
+  width: max-content;
+  overflow: hidden;
+  position: relative;
+  animation: marquee 20s linear infinite;
+  will-change: transform;
+}
+.marquee-item {
+  padding:0 72px 0 60px;
+  color: var(--primary-color);
+  font-family: var(--font-WideBlack);
+  font-size: 14px;
+  white-space: nowrap;
+  text-transform:uppercase;
+  position:relative;
+}
+.marquee-item:after {
+  content: "";
+  position: absolute;
+  right: 0;
+  width: 12px;
+  height:100%;
+  top: 0;
+  background: url({{ 'cross-red.svg' | asset_url }}) no-repeat center center;
+  animation: rotate 5s linear infinite;
+  align-items: center;
+  display: flex;
+}
+
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+@keyframes rotate {
+ 0%{
+    transform: rotate(0deg);
+   }
+100%{
+    transform: rotate(360deg);
+   }
+}
+@media(max-width: 768px) { 
+  .marquee-item {
+    padding: 0 32px 0 20px;
+  }
+}
+
+@media(max-width: 600px) { 
+  .marquee-wrapper {
+    padding: 15px 0;
+  }
+  .marquee-item {
+    font-size: 12px;
+  }
+}
+</style>
+
+{% schema %}
+{
+  "name": "Marquee Section",
+  "blocks": [
+    {
+      "type": "text",
+      "name": "Marquee Text",
+      "settings": [
+        {
+          "type": "text",
+          "id": "text",
+          "label": "Text"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Marquee Animation"
+    }
+  ]
+}
+{% endschema %}

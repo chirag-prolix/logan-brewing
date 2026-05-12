@@ -1,0 +1,176 @@
+<section class="custom-product-grid">
+  
+  {% if section.settings.section_title != blank %}
+    <h2 class="section-title">
+      {{ section.settings.section_title }}
+    </h2>
+  {% endif %}
+
+  <div class="product-grid">
+    {% for block in section.blocks %}
+      <div class="product-item" {{ block.shopify_attributes }}>
+        
+        {% if block.settings.link != blank %}
+          <a href="{{ block.settings.link }}">
+        {% endif %}
+
+            {% if block.settings.title != blank %}
+              <h3 class="product-title">
+                {{ block.settings.title }}
+              </h3>
+            {% endif %}
+
+            {% if block.settings.description != blank %}
+                <div class="product-description">
+                {{ block.settings.description }}
+                </div>
+            {% endif %}
+
+            {% if block.settings.image != blank %}
+              <div class="product-image">
+                <img  src="{{ block.settings.image | image_url}}" alt="{{ block.settings.title }}" >
+              </div>
+            {% endif %}
+
+        {% if block.settings.link != blank %}
+          </a>
+        {% endif %}
+
+      </div>
+    {% endfor %}
+  </div>
+
+</section>
+
+{% stylesheet %}
+
+.custom-product-grid {
+  padding: 0px 0;
+}
+.section-title {
+  width: 100%;
+  padding: 20px 25px;  
+  font-size: 24px;
+  color: var(--primary-color);
+  font-family: var(--font-WideBlack);
+  text-transform: uppercase;
+  text-align: center;
+}
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  border-top: 1px solid var(--primary-color);
+  border-bottom: 1px solid var(--primary-color);
+}
+.product-item {
+  padding: 80px 0 40px 0;
+  border-right: 1px solid var(--primary-color);
+}
+.product-item:last-child {
+  border-right: none;
+}
+.product-title {
+  width: 100%;
+  margin-bottom: 20px;
+  color: var(--primary-color);
+  font-family: var(--font-WideBlack);
+  font-size: 24px;
+  text-transform: uppercase;
+  text-align: center;
+}
+.product-image img {
+  width: 100%;
+  transition: transform 0.3s ease;
+}
+.product-description {
+  max-width: 300px;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  text-align: center;
+  display: flex;
+  color: var(--primary-color);
+  font-size: 20px;
+  line-height: 24px;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+}
+.product-item:hover img {
+  transform: translateY(-10px);
+}
+@media (max-width: 768px) {
+  .product-grid {
+    grid-template-columns: 1fr;
+  }
+  .product-item {
+    border-right: none;
+    border-bottom: 1px solid var(--primary-color);
+    padding-top: 30px;
+    padding-bottom: 10px;
+  }
+  .product-title {
+    margin-bottom: 0px;
+  }
+  .product-item:last-child {
+    border-bottom: none;
+  }
+}
+@media (max-width: 600px) { 
+  .section-title {
+    padding: 15px 25px;
+    font-size: 20px;
+  }
+  .product-title {
+    font-size: 20px;
+  }
+}
+
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Custom Product Grid",
+  "settings": [
+    {
+      "type": "text",
+      "id": "section_title",
+      "label": "Section Title",
+      "default": "OUR SELECTION OF PISS"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "product_item",
+      "name": "Product Item",
+      "settings": [
+        {
+          "type": "text",
+          "id": "title",
+          "label": "Product Title"
+        },
+        {
+          "type": "textarea",
+          "id": "description",
+          "label": "Product Description"
+        },
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "Product Image"
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Product Link"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Custom Product Grid"
+    }
+  ]
+}
+{% endschema %}

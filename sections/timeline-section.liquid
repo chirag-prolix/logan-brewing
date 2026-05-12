@@ -1,0 +1,204 @@
+<section class="timeline-section" style="background: {{ section.settings.bg_color }};">
+  <div class="page-width">
+    {% if section.settings.heading != blank %}
+      <h2 class="timeline-heading">{{ section.settings.heading }}</h2>
+    {% endif %}
+
+    {% if section.settings['top-text'] != blank %}
+      <div class="timeline-top-description">
+        {{ section.settings['top-text'] }}
+      </div>
+    {% endif %}
+
+    <div class="timeline-wrapper">
+      <div class="timeline-line"></div>
+
+      {% for block in section.blocks %}
+        {%- assign delay = forloop.index0 | times: 250 -%}
+
+        <div
+          class="
+            timeline-item
+            {% if forloop.first %}
+              center-item
+            {% else %}
+              {% if block.settings.layout == 'media_left' %}
+                media-left
+              {% else %}
+                media-right
+              {% endif %}
+            {% endif %}
+          "
+          {{ block.shopify_attributes }}
+        >
+          <!-- Center Icon -->
+          <div class="timeline-dot">
+            {% if section.settings.cross_icon != blank %}
+              <img src="{{ section.settings.cross_icon | image_url }}" alt="">
+            {% endif %}
+          </div>
+
+          <div class="timeline-inner">
+            <!-- FIRST ITEM CENTER -->
+            {% if forloop.first %}
+              <div class="timeline-content center-content">
+                <h4>{{ block.settings.date }}</h4>
+                <p>{{ block.settings.text }}</p>
+              </div>
+
+            {% else %}
+              <!-- MEDIA -->
+              {% if block.settings.layout == 'media_left' %}
+              <div class="timeline-media js-scroll fadeInLeft" data-delay="{{ delay }}">
+                {% unless forloop.first %}
+                  {% if block.settings.video_upload != blank %}
+                    {{
+                      block.settings.video_upload
+                      | video_tag: autoplay: true, loop: true, muted: true, controls: false, playsinline: true
+                    }}
+
+                  {% elsif block.settings.video_url != blank %}
+                    <div class="video-wrapper">
+                      <iframe
+                        src="{{ block.settings.video_url }}"
+                        frameborder="0"
+                        allow="autoplay; encrypted-media"
+                        allowfullscreen
+                      >
+                      </iframe>
+                    </div>
+
+                  {% elsif block.settings.image != blank %}
+                    <img src="{{ block.settings.image | image_url}}" alt="">
+                  {% endif %}
+                {% endunless %}
+              </div>
+              <div class="timeline-content js-scroll fadeInRight"  data-delay="{{ delay }}">
+                <h4>{{ block.settings.date }}</h4>
+                <p>{{ block.settings.text }}</p>
+              </div>
+              {% else %}
+               <div class="timeline-media js-scroll fadeInRight" data-delay="{{ delay }}">
+                {% unless forloop.first %}
+                  {% if block.settings.video_upload != blank %}
+                    {{
+                      block.settings.video_upload
+                      | video_tag: autoplay: true, loop: true, muted: true, controls: false, playsinline: true
+                    }}
+
+                  {% elsif block.settings.video_url != blank %}
+                    <div class="video-wrapper">
+                      <iframe
+                        src="{{ block.settings.video_url }}"
+                        frameborder="0"
+                        allow="autoplay; encrypted-media"
+                        allowfullscreen
+                      >
+                      </iframe>
+                    </div>
+
+                  {% elsif block.settings.image != blank %}
+                    <img src="{{ block.settings.image | image_url}}" alt="">
+                  {% endif %}
+                {% endunless %}
+              </div>
+              <div class="timeline-content js-scroll fadeInLeft"  data-delay="{{ delay }}">
+                <h4>{{ block.settings.date }}</h4>
+                <p>{{ block.settings.text }}</p>
+              </div>  
+              {% endif %}  
+            {% endif %}
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Timeline Section",
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Section Heading"
+    },
+    {
+      "type": "richtext",
+      "id": "top-text",
+      "label": "Top Description"
+    },
+    {
+      "type": "color",
+      "id": "bg_color",
+      "label": "Background Color",
+      "default": "#f2efe9"
+    },
+    {
+      "type": "image_picker",
+      "id": "cross_icon",
+      "label": "Center Cross Icon"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "timeline_item",
+      "name": "Timeline Item",
+      "settings": [
+        {
+          "type": "text",
+          "id": "date",
+          "label": "Date"
+        },
+        {
+          "type": "textarea",
+          "id": "text",
+          "label": "Description"
+        },
+        {
+          "type": "select",
+          "id": "layout",
+          "label": "Layout",
+          "options": [
+            { "value": "media_left", "label": "Media Left / Content Right" },
+            { "value": "media_right", "label": "Content Left / Media Right" }
+          ],
+          "default": "media_left"
+        },
+        {
+          "type": "select",
+          "id": "media_type",
+          "label": "Media Type",
+          "options": [
+            { "value": "image", "label": "Image" },
+            { "value": "video_upload", "label": "Upload Video" },
+            { "value": "video_url", "label": "Video URL (YouTube/Vimeo)" }
+          ],
+          "default": "image"
+        },
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "Image"
+        },
+        {
+          "type": "video",
+          "id": "video_upload",
+          "label": "Upload Video (Local)"
+        },
+        {
+          "type": "text",
+          "id": "video_url",
+          "label": "Video URL"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Timeline Section"
+    }
+  ]
+}
+{% endschema %}

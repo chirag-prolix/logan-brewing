@@ -1,0 +1,109 @@
+<section 
+  class="newsletter-split-section"
+  style="background-color: {{ section.settings.bg_color }}; color: {{ section.settings.text_color }};"
+>
+  <div class="newsletter-wrapper">
+
+    <!-- LEFT CONTENT -->
+    <div class="newsletter-left">
+
+      {% if section.settings.right_icon != blank %}
+        <img class="crown-icon" src="{{ section.settings.right_icon | image_url}}" alt="">
+      {% endif %}
+
+      {% if section.settings.title != blank %}
+        <h2 class="newsletter-title">
+          {{ section.settings.title }}
+        </h2>
+      {% endif %}
+
+      {% if section.settings.subtitle != blank %}
+        <div class="newsletter-subtitle">
+          {{ section.settings.subtitle }}
+        </div>
+      {% endif %}
+
+      {% form 'customer' %}
+        <div class="form-group">
+          <input 
+            type="text" 
+            name="contact[name]" 
+            placeholder="{{ section.settings.name_placeholder }}"
+          >
+        </div>
+
+        <div class="form-group">
+          <input 
+            type="email" 
+            name="contact[email]" 
+            placeholder="{{ section.settings.email_placeholder }}"
+            required
+          >
+        </div>
+
+        <button 
+          type="submit" 
+          class="newsletter-btn {{ section.settings.button_class }}"
+        >
+          {{ section.settings.button_text }}
+        </button>
+      {% endform %}
+
+      <!-- CROSS ICONS -->
+      <div class="cross-icons">
+        {% if section.settings.cross_icon_1 != blank %}
+          <img src="{{ section.settings.cross_icon_1 | image_url }}" alt="">
+        {% endif %}
+        {% if section.settings.cross_icon_2 != blank %}
+          <img src="{{ section.settings.cross_icon_2 | image_url }}" alt="">
+        {% endif %}
+        {% if section.settings.cross_icon_3 != blank %}
+          <img src="{{ section.settings.cross_icon_3 | image_url }}" alt="">
+        {% endif %}
+      </div>
+
+    </div>
+
+    <!-- RIGHT IMAGE -->
+    <div class="newsletter-right">
+      {% if section.settings.right_image != blank %}
+        <img 
+          src="{{ section.settings.right_image | image_url: width: 1200 }}" 
+          alt=""
+        >
+      {% endif %}
+    </div>
+
+  </div>
+</section>
+
+
+{% schema %}
+{
+  "name": "Newsletter Split",
+  "settings": [
+    {"type": "image_picker", "id": "right_icon", "label": "Crown Icon" },
+    
+    { "type": "text", "id": "title", "label": "Form Title" },
+    { "type": "textarea", "id": "subtitle", "label": "Form Subtitle" },
+
+    { "type": "text", "id": "name_placeholder", "label": "Name Field Placeholder", "default": "NAME*" },
+    { "type": "text", "id": "email_placeholder", "label": "Email Field Placeholder", "default": "EMAIL*" },
+
+    { "type": "text", "id": "button_text", "label": "Button Text", "default": "Submit" },
+    { "type": "text", "id": "button_class", "label": "Button CSS Class" },
+
+    { "type": "image_picker", "id": "cross_icon_1", "label": "Cross Icon 1" },
+    { "type": "image_picker", "id": "cross_icon_2", "label": "Cross Icon 2" },
+    { "type": "image_picker", "id": "cross_icon_3", "label": "Cross Icon 3" },
+
+    { "type": "image_picker", "id": "right_image", "label": "Right Side Image" },
+
+    { "type": "color", "id": "bg_color", "label": "Background Color", "default": "#f3efe9" },
+    { "type": "color", "id": "text_color", "label": "Text Color", "default": "#5a1c1c" }
+  ],
+  "presets": [
+    { "name": "Newsletter Split" }
+  ]
+}
+{% endschema %}

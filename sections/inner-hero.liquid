@@ -1,0 +1,200 @@
+<section
+  class="inner-hero"
+  style="
+    {% if section.settings.bg_image != blank %}
+      background-image: url({{ section.settings.bg_image | image_url: width: 2000 }});
+    {% endif %}
+  "
+>
+  <!-- Overlay -->
+  {% if section.settings.overlay_color != blank %}
+    <div
+      class="inner-hero-overlay"
+      style="
+        background-color: {{ section.settings.overlay_color }};
+        opacity: {{ section.settings.overlay_opacity | divided_by: 100.0 }};
+      "
+    ></div>
+  {% endif %}
+
+  <div class="inner-hero-content">
+    <!-- TITLE -->
+    {% if section.settings.title != blank %}
+      <h1 class="inner-hero-title">
+        {{ section.settings.title }}
+      </h1>
+    {% endif %}
+
+    <!-- ICON + TEXT -->
+    {% if section.settings.sub_text != blank or section.settings.sub_icon != blank %}
+      <div class="inner-hero-sub">
+        {% if section.settings.sub_icon != blank %}
+          <img src="{{ section.settings.sub_icon | image_url}}" alt="Icon">
+        {% endif %}
+
+        {% if section.settings.sub_text != blank %}
+          <p>{{ section.settings.sub_text }}</p>
+        {% endif %}
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- BOTTOM SIGNATURE -->
+  {% if section.settings.bottom_image != blank %}
+    <div class="inner-hero-bottom">
+      <img src="{{ section.settings.bottom_image | image_url: width}}" alt="Bottom Image">
+    </div>
+  {% elsif section.settings.bottom_text != blank %}
+    <div class="inner-hero-bottom inner-hero-bottom-text">
+      {{ section.settings.bottom_text }}
+    </div>
+  {% endif %}
+</section>
+
+{% stylesheet %}
+  .inner-hero {
+    position: relative;
+    background-size: cover;
+    background-position: center;
+    min-height: 880px;
+    padding: 25px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: var(--white-text-color);
+    margin-top: 96px;
+    border-bottom: 1px solid var(--primary-color);
+  }
+  .inner-hero-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+  }
+  .inner-hero-content {
+    position: relative;
+    z-index: 2;
+    max-width: 1062px;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  .inner-hero-title {
+    font-family: var(--font-WideBlack);
+    font-size: 140px;
+    line-height: 125px;
+    color: var(--white-text-color);
+    text-transform: uppercase;
+    margin-bottom: 50px;
+  }
+  .inner-hero-sub {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .inner-hero-sub p {
+    font-size: 16px;
+    letter-spacing: 2px;
+    font-family: var(--font-WideBlack);
+  }
+  .inner-hero-bottom {
+    position: absolute;
+    bottom: 30px;
+    left: 0;
+    right: 0;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
+  }
+  .inner-hero-bottom-text {
+    font-family: cursive;
+    font-size: 20px;
+    opacity: 0.8;
+  }
+  @media (max-width: 1024px) {
+    .inner-hero-title {
+      font-size: 90px;
+      line-height: 80px;
+    }
+    .inner-hero {
+      min-height: 690px;
+    }
+  }
+  @media (max-width: 991px) {
+    .inner-hero {
+      margin-top: 70px;
+    }
+  }
+  @media (max-width: 600px) {
+    .inner-hero {
+      min-height: 400px;
+    }
+    .inner-hero-title {
+      font-size: 42px;
+      line-height: 50px;
+      margin-bottom: 25px;
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Inner Hero",
+  "settings": [
+    {
+      "type": "image_picker",
+      "id": "bg_image",
+      "label": "Background Image"
+    },
+    {
+      "type": "color",
+      "id": "overlay_color",
+      "label": "Overlay Color",
+      "default": "#000000"
+    },
+    {
+      "type": "range",
+      "id": "overlay_opacity",
+      "label": "Overlay Opacity (%)",
+      "min": 0,
+      "max": 100,
+      "step": 5,
+      "default": 40
+    },
+    {
+      "type": "text",
+      "id": "title",
+      "label": "Main Title"
+    },
+    {
+      "type": "image_picker",
+      "id": "sub_icon",
+      "label": "Icon Below Title"
+    },
+    {
+      "type": "text",
+      "id": "sub_text",
+      "label": "Text Below Title"
+    },
+    {
+      "type": "text",
+      "id": "bottom_text",
+      "label": "Bottom Signature Text"
+    },
+    {
+      "type": "image_picker",
+      "id": "bottom_image",
+      "label": "Bottom Signature Image"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Inner Hero"
+    }
+  ]
+}
+{% endschema %}

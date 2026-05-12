@@ -1,0 +1,116 @@
+<section class="faqs-content-section">
+  <div class="faq-container">
+        {% if section.settings.title != blank %}
+            <h1 class="section-title-big">{{ section.settings.title }}</h1>
+        {% endif %}
+        {% for block in section.blocks %}
+            <div class="description">
+                <h2>{{ block.settings.block-title }}</h2>
+                {{ block.settings.faqs-text }}
+            </div>
+        {% endfor %}
+  </div>
+</section>
+
+{% stylesheet %}
+  .faqs-content-section {
+     margin: 200px 0 150px 0;
+     width: 100%;
+  }  
+  .faq-container {
+    max-width: 980px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 0 20px;
+  }
+  .faq-container .section-title-big {
+    width: 100%;
+    text-align: center;
+    margin-bottom: 100px;
+  }
+  .faq-container .description {
+    width: 100%;
+    margin-bottom: 80px;
+  }
+  .faq-container .description:last-child {
+    margin-bottom: 0;
+  }
+  .faq-container .description h2 {
+    font-size: 24px;
+    color: var(--primary-color) ;
+    font-family: var(--font-WideBlack);
+    text-transform: uppercase;
+    width: 100%;
+    margin-bottom: 30px;
+  }
+  .faq-container .description p {
+    width: 100%;
+    font-size: 20px;
+    line-height: 26px;
+    color: var(--primary-color) ;
+  }
+  @media screen and (max-width: 992px) {
+
+    .faqs-content-section {
+        margin: 120px 0 50px;
+    }
+    .faq-container .section-title-big {
+        margin-bottom: 50px;
+    }
+    .faq-container .description h2 {
+        margin-bottom: 15px;
+    }
+    .faq-container .description {
+        margin-bottom: 40px;
+    }
+  }
+  @media screen and (max-width: 600px) { 
+    .faq-container .section-title-big {
+        margin-bottom: 30px;
+    }
+    .faq-container .description h2 {
+        font-size: 20px;
+    }
+    .faq-container .description p {
+        font-size: 16px;
+        line-height: 22px;
+    }
+  }
+
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Faqs Content Section",
+  "settings": [
+    {
+      "type": "text",
+      "id": "title",
+      "label": "Section Title"
+    },
+  ],
+    "blocks": [
+    {
+      "type": "text",
+      "name": "Faqs Text",
+      "settings": [
+        {
+          "type": "text",
+          "id": "block-title",
+          "label": "Title"
+        },
+        {
+        "type": "richtext",
+        "id": "faqs-text",
+        "label": "Description"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Faqs Content Section"
+    }
+  ]
+}
+{% endschema %}

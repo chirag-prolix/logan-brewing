@@ -1,0 +1,160 @@
+<header class="custom-header">
+  <div class="header-wrapper">
+    
+    <!-- Logo -->
+    <div class="header-logo">
+      <a href="{{ routes.root_url }}">
+        {% if section.settings.logo != blank %}
+          <img src="{{ section.settings.logo | image_url: width: 200 }}" alt="Logo">
+        {% else %}
+          <h2>{{ shop.name }}</h2>
+        {% endif %}
+      </a>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="header-nav">
+      <ul>
+        {% for link in section.settings.menu.links %}
+          <li><a href="{{ link.url }}" class="{% if link.active %}active{% endif %}">{{ link.title }}</a></li>
+        {% endfor %}
+      </ul>
+    </nav>
+    <div class="header-right">
+      <div class="cart-block">
+        <a href="javascript:void(0)" class="cart-link" id="cartToggle">
+           <img src="{{ 'cart-icon.svg' | asset_url }}" alt="Cart">
+           <span class="cart-count">{{ cart.item_count }}</span>
+        </a>
+      </div>
+      <div class="header-icon">
+      <a href="{{ routes.root_url }}">
+        {% if section.settings.icon != blank %}
+          <img src="{{ section.settings.icon | image_url: width: 72 }}" alt="Icon">
+        {% endif %}
+      </a>
+      </div>
+      <!-- Hamburger -->
+      <div class="menu-toggle">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+     </div>
+  </div>
+    <!-- OFF CANVAS MENU -->
+    <div class="mobile-menu">
+      <div class="off-canvas-header">
+          <a href="{{ routes.root_url }}">
+        {% if section.settings.logo != blank %}
+          <img src="{{ section.settings.logo | image_url: width: 80 }}" alt="Logo">
+        {% else %}
+          <h2>{{ shop.name }}</h2>
+        {% endif %}
+      </a>
+        <div class="menu-close">
+          <img src="{{ 'close-icon.svg' | asset_url }}" alt="Close Menu">
+        </div>
+      </div>
+      <div class="mobile-menu-inner">
+        {% for link in section.settings.menu.links %}
+          <a href="{{ link.url }}"  class="{% if link.active %}active{% endif %}">{{ link.title }}</a>
+        {% endfor %}
+      </div>
+    </div>
+    <div class="menu-overlay"></div>
+
+    <!--  cart model -->
+    <div class="cart-drawer" id="cartDrawer">
+      <div class="cart-header">
+        <h2>CART</h2>
+        <span class="close-btn" id="cartClose"><img src="{{ 'close-icon.svg' | asset_url }}" alt="Close Menu"></span>
+      </div>
+      <div class="free-shipping-label">Free Shipping</div>
+      <div class="cart-body" id="cartItems">
+        <!-- Items will load here -->
+      </div>
+
+      <div class="cart-footer">
+        <div class="cart-subtotal">
+          <span>Subtotal</span>
+          <span id="cartSubtotal" class="subtotal-price"></span>
+        </div>
+        <p class="tax-text">Tax included.</p>
+        <a href="/checkout" class="checkout-btn primary-btn">CHECKOUT</a>
+        <div class="payment-icons">
+          {% for type in shop.enabled_payment_types %}
+            <img src="{{ type | payment_type_img_url }}" alt="{{ type }}" class="payment-icon">
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <div class="cart-overlay" id="cartOverlay"></div>
+
+</header>
+<script>
+    document.addEventListener("DOMContentLoaded", function(){
+
+      const toggle = document.querySelector(".menu-toggle");
+      const menu = document.querySelector(".mobile-menu");
+      const overlay = document.querySelector(".menu-overlay");
+      const closeBtn = document.querySelector(".menu-close");
+
+      toggle.addEventListener("click", function(){
+        menu.classList.add("active");
+        overlay.classList.add("active");
+      });
+
+      overlay.addEventListener("click", function(){
+        menu.classList.remove("active");
+        overlay.classList.remove("active");
+      });
+
+      closeBtn.addEventListener("click", function(){
+        menu.classList.remove("active");
+        overlay.classList.remove("active");
+      });
+
+    });
+</script>
+<script>
+function updateCartCount(){
+  fetch('/cart.js')
+    .then(res => res.json())
+    .then(cart => {
+      document.querySelectorAll(".cart-count").forEach(el => {
+        el.innerText = cart.item_count;
+      });
+    });
+}
+</script>
+
+
+{% schema %}
+{
+  "name": "Custom Header",
+  "settings": [
+    {
+      "type": "image_picker",
+      "id": "logo",
+      "label": "Logo"
+    },
+    {
+      "type": "link_list",
+      "id": "menu",
+      "label": "Select Menu"
+    },
+    {
+      "type": "image_picker",
+      "id": "icon",
+      "label": "Right Side Icon (Crown)"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Custom Header"
+    }
+  ]
+}
+{% endschema %}

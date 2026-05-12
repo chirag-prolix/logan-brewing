@@ -1,0 +1,424 @@
+{% comment %}
+  This section is used in the product template to render product page with
+  media, content, and add-to-cart form.
+
+  https://shopify.dev/docs/storefronts/themes/architecture/templates/product
+{% endcomment %}
+{% assign current_product = product %}
+{% assign related_limit = section.settings.products_limit | default: 3 %}
+{% assign current_collection = product.collections.first %}
+
+    <div class="product-details-top-block">
+        
+        <div class="product-images">
+            <div class="swiper myProductSwiper">
+                <div class="swiper-wrapper">
+                    {% for image in product.images %}
+                        <div class="swiper-slide">
+                            <img src="{{ image | image_url}}" alt="{{ image.alt | escape }}">
+                        </div>
+                    {% endfor %}
+                </div>
+                <!-- Pagination -->
+                <div class="swiper-pagination"></div>
+            </div>
+        </div>
+
+        <div class="product-info-main">
+            <div class="product-info">
+
+            <h1>{{ product.title }}</h1>
+
+            <p class="price-text">{{ product.price | money }}</p>
+
+            {{ product.description }}
+
+            </div>
+
+            <div class="product-form">
+            {% form 'product', product %}
+                
+                {% assign current_variant = product.selected_or_first_available_variant %}
+
+                {% for option in product.options_with_values %}
+                <div class="product-option-block">
+
+                    <p class="option-title">{{ option.name }}</p>
+
+                    <div class="option-values">
+
+                    {% for value in option.values %}
+
+                        {% if option.name == "Color" %}
+                        <label class="color-swatch-label">
+                            <input type="radio"
+                            name="{{ option.name }}"
+                            value="{{ value }}"
+                            {% if option.selected_value == value %}checked{% endif %}>
+
+                            <span class="color-swatch"
+                            style="background-color: {{ value | downcase }};"
+                            title="{{ value }}">
+                            </span>
+                        </label>
+
+                        {% elsif option.name == "Size" %}
+
+                        <label class="size-box">
+                            <input type="radio"
+                            name="{{ option.name }}"
+                            value="{{ value }}"
+                            {% if option.selected_value == value %}checked{% endif %}>
+                            <span>{{ value }}</span>
+                        </label>
+
+                        {% elsif option.name == "Fabric" %}
+
+                        <label class="fabric-btn">
+                            <input type="radio"
+                            name="{{ option.name }}"
+                            value="{{ value }}"
+                            {% if option.selected_value == value %}checked{% endif %}>
+                            <span>{{ value }}</span>
+                        </label>
+
+                        {% endif %}
+
+                    {% endfor %}
+
+                    </div>
+                </div>
+                {% endfor %}
+
+                <input type="hidden" name="id" value="{{ product.selected_or_first_available_variant.id }}">
+                
+
+                <div class="quantity-card">
+                    <div class="option-title">Quantity</div>
+                    <div class="quantity-box">
+                        <button type="button" class="qty-minus">−</button>
+                        <input type="number" name="quantity" value="1" min="1" id="quantityInput">
+                        <button type="button" class="qty-plus">+</button>
+                    </div>
+                </div>
+
+                <div class="bottom-btn-row">
+                    <input class="primary-btn" type="submit" value="Add to cart">
+                        {% comment %} {{ form | payment_button }} {% endcomment %}
+                </div> 
+            {% endform %}
+
+            </div>
+
+            <div class="product-extra-links">
+                <a href="#" class="policy-modal-open" data-modal="sizeModal">Sizing Guide</a>
+                <a href="#" class="policy-modal-open" data-modal="returnsModal">Returns & Refunds</a>
+                <a href="#" class="policy-modal-open" data-modal="shippingModal">Shipping & Delivery</a>
+            </div>
+        </div>
+    </div>
+
+<section class="shop-grid related-product">
+
+    <h2 class="shop-title">{{ section.settings.title }}</h2>
+
+    {% if current_collection %}
+        {% assign counter = 0 %}
+        <div class="grid">
+        {% for p in current_collection.products %}
+            {% unless p.id == current_product.id %}
+            {% if counter < related_limit %}
+                <div class="grid-item"> 
+                        <a href="{{ p.url }}">
+                        {% if p.featured_image %}
+                            <div class="shop-product-image">
+                                {% if p.images.size > 1 %}
+                                    <img class="primary-image" src="{{ p.featured_image | image_url }}" alt="{{ p.featured_image.alt | default: p.title }}">
+                                    <img class="hover-image" src="{{ p.images[1] | image_url }}" alt="{{ p.title }}">
+                                {% else %}
+                                    <img src="{{ p.featured_image | image_url }}" alt="{{ p.featured_image.alt | default: p.title }}">
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                        <div class="grid-ft-block">
+                            <h3 class="shop-product-title">{{ p.title | upcase }}</h3>
+                            <div class="shop-product-price">{{ p.price | money }}</div>
+                        </div>
+                    </a>
+                </div>
+                {% assign counter = counter | plus: 1 %}
+            {% endif %}
+            {% endunless %}
+        {% endfor %}
+        </div>
+    {% endif %}
+
+    {% if current_collection %}
+        <div class="view-all-btn"><a href="/collections/shop-merch" class="secondary-btn">View All</a></div>
+        
+    {% endif %}
+</section>
+
+    <!-- SIZE MODAL -->
+                <div id="sizeModal" class="policy-custom-modal">
+                    <div class="policy-modal-box">
+                        <span class="policy-modal-close">
+                            <img src="{{ 'close-icon.svg' | asset_url }}" alt="Close">
+                        </span>
+                        <div class="crown-icon-block">
+                            <img src="{{ 'crown.png' | asset_url }}" alt="Crown">
+                        </div>
+                        <h2>{{ section.settings.size_title }}</h2>
+                        <div class="policy-description">{{ section.settings.size_content }}</div>
+                
+                    </div>
+                </div>
+
+                <!-- RETURNS MODAL -->
+                <div id="returnsModal" class="policy-custom-modal">
+                    <div class="policy-modal-box">
+                        <span class="policy-modal-close">
+                            <img src="{{ 'close-icon.svg' | asset_url }}" alt="Close">
+                        </span>
+                        <div class="crown-icon-block">
+                            <img src="{{ 'crown.png' | asset_url }}" alt="Crown">
+                        </div>
+                        <h2>{{ section.settings.returns_title }}</h2>
+                        <div class="policy-description">{{ section.settings.returns_content }}</div>
+                        <a href="{{ section.settings.returns_btn_link }}" class="secondary-btn">
+                        {{ section.settings.returns_btn_text }}
+                        </a>
+                    </div>
+                </div>
+
+                <!-- SHIPPING MODAL -->
+                <div id="shippingModal" class="policy-custom-modal">
+                    <div class="policy-modal-box">
+                        <span class="policy-modal-close">
+                            <img src="{{ 'close-icon.svg' | asset_url }}" alt="Close">
+                        </span>
+                        <div class="crown-icon-block">
+                            <img src="{{ 'crown.png' | asset_url }}" alt="Crown">
+                        </div>
+                        <h2>{{ section.settings.shipping_title }}</h2>
+                        <div class="policy-description">{{ section.settings.shipping_content }}</div>
+                        <a href="{{ section.settings.shipping_btn_link }}" class="secondary-btn">
+                        {{ section.settings.shipping_btn_text }}
+                        </a>
+                    </div>
+            </div>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+
+    new Swiper(".myProductSwiper", {
+        loop: true,
+        spaceBetween: 0,
+        speed: 800,
+        
+        autoplay: {
+        delay: 3000,
+        disableOnInteraction: false,
+        pauseOnMouseEnter: true,
+        },
+
+        pagination: {
+        el: ".swiper-pagination",
+        clickable: true,
+        },
+
+        navigation: {
+        nextEl: ".swiper-button-next",
+        prevEl: ".swiper-button-prev",  
+        },
+
+        breakpoints: {
+        768: {
+            slidesPerView: 1,
+        }
+        }
+    });
+
+    });
+
+        let qtyInput = document.getElementById("quantityInput");
+
+        document.querySelector(".qty-plus").addEventListener("click", function(){
+        qtyInput.value = parseInt(qtyInput.value) + 1;
+        });
+
+        document.querySelector(".qty-minus").addEventListener("click", function(){
+        if(parseInt(qtyInput.value) > 1){
+            qtyInput.value = parseInt(qtyInput.value) - 1;
+        }
+        });
+        document.addEventListener("change", function() {
+
+            let selectedOptions = [];
+
+            document.querySelectorAll(".product-option-block").forEach((block, index) => {
+                let checked = block.querySelector("input:checked");
+                selectedOptions[index] = checked ? checked.value : null;
+            });
+
+            let variants = {{ product.variants | json }};
+
+            let found = variants.find(variant => {
+                return variant.options.every((opt, i) => opt === selectedOptions[i]);
+            });
+
+            if(found){
+                document.querySelector("input[name='id']").value = found.id;
+                console.log("Variant Found:", found.id);
+            } else {
+                console.log("Variant NOT found");
+            }
+
+        });
+
+</script>
+<script>
+    document.querySelectorAll(".policy-modal-open").forEach(btn => {
+        btn.addEventListener("click", function(e){
+            e.preventDefault();
+            let id = this.getAttribute("data-modal");
+            document.getElementById(id).classList.add("active");
+        });
+        });
+
+        document.querySelectorAll(".policy-modal-close").forEach(btn => {
+        btn.addEventListener("click", function(){
+            this.closest(".policy-custom-modal").classList.remove("active");
+        });
+        });
+
+        document.querySelectorAll(".policy-custom-modal").forEach(modal => {
+        modal.addEventListener("click", function(e){
+            if(e.target === this){
+            this.classList.remove("active");
+            }
+        });
+    });
+</script>
+
+<!-- <script>
+    document.addEventListener("DOMContentLoaded", function(){
+
+    const productForm = document.querySelector('form[action="/cart/add"]');
+
+    if(productForm){
+        productForm.addEventListener("submit", function(e){
+        e.preventDefault(); 
+
+        let formData = new FormData(productForm);
+
+        fetch('/cart/add.js', {
+            method: 'POST',
+            body: formData
+        })
+        .then(res => res.json())
+        .then(() => {
+
+            document.getElementById("cartDrawer").classList.add("active");
+            document.getElementById("cartOverlay").classList.add("active");
+
+            if(typeof loadCart === "function"){
+            loadCart();
+            }
+            updateCartCount();
+
+        });
+        });
+    }
+
+    });
+</script> -->
+
+
+{% schema %}
+{
+  "name": "t:general.product",
+  "settings": [
+        {
+        "type": "text",
+        "id": "size_title",
+        "label": "Sizing Title"
+        },
+        {
+        "type": "richtext",
+        "id": "size_content",
+        "label": "Sizing Content"
+        },
+        {
+        "type": "text",
+        "id": "size_btn_text",
+        "label": "Sizing Button Text"
+        },
+        {
+        "type": "url",
+        "id": "size_btn_link",
+        "label": "Sizing Button Link"
+        },
+
+        {
+        "type": "text",
+        "id": "returns_title",
+        "label": "Returns Title"
+        },
+        {
+        "type": "richtext",
+        "id": "returns_content",
+        "label": "Returns Content"
+        },
+        {
+        "type": "text",
+        "id": "returns_btn_text",
+        "label": "Returns Button Text"
+        },
+        {
+        "type": "url",
+        "id": "returns_btn_link",
+        "label": "Returns Button Link"
+        },
+
+        {
+        "type": "text",
+        "id": "shipping_title",
+        "label": "Shipping Title"
+        },
+        {
+        "type": "richtext",
+        "id": "shipping_content",
+        "label": "Shipping Content"
+        },
+        {
+        "type": "text",
+        "id": "shipping_btn_text",
+        "label": "Shipping Button Text"
+        },
+        {
+        "type": "url",
+        "id": "shipping_btn_link",
+        "label": "Shipping Button Link"
+        },
+        {
+        "type": "text",
+        "id": "title",
+        "label": "Section Title",
+        "default": "Related Products"
+        },
+        {
+        "type": "range",
+        "id": "products_limit",
+        "label": "Number of Products",
+        "min": 2,
+        "max": 8,
+        "step": 1,
+        "default": 4
+    }
+  ],
+  "disabled_on": {
+    "groups": ["header", "footer"]
+  }
+}
+
+{% endschema %}

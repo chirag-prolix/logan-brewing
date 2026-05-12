@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="{{ request.locale.iso_code }}">
+  <head>
+    {% assign cache_bust = 'now' | date: '%s' %}
+    {% if settings.favicon != blank %}
+      <link rel="icon" type="image/png" href="{{ settings.favicon | image_url: width: 32 }}">
+    {% endif %}
+    {% # Inlined CSS Variables %}
+    {% render 'css-variables' %}
+
+    {% comment %}
+      Font preloading:
+      1. Preconnect to font CDN for faster connection
+      2. Preload only the critical font variant (base weight)
+      3. Additional variants load on-demand via @font-face
+    {% endcomment %}
+    {% unless settings.type_primary_font.system? %}
+      <link rel="preconnect" href="https://fonts.shopifycdn.com" crossorigin>
+
+      {% comment %} Preload the base font variant for initial page render {% endcomment %}
+      {{ settings.type_primary_font | font_url | preload_tag: as: 'font', crossorigin: 'anonymous' }}
+    {% endunless %}
+
+    {% # Load and preload the critical CSS %}
+    {{ 'critical.css' | asset_url | stylesheet_tag: preload: true }}
+    {{ 'swiper-bundle.min.css' | asset_url | stylesheet_tag: preload: true }}
+    {{ 'base.css' | asset_url | stylesheet_tag: preload: true }}
+
+    {% # Social, title, etc. %}
+    {% render 'meta-tags' %}
+
+    {{ content_for_header }}
+
+    {% unless template contains 'age-only' %}
+      <script>
+        var allowedPages = ['/pages/age-verification', '/pages/legal-stuff', '/policies/privacy-policy'];
+
+        if (localStorage.getItem('ageVerified') !== 'true') {
+          if (!allowedPages.includes(window.location.pathname)) {
+            window.location.href = '/pages/age-verification';
+          }
+        }
+      </script>
+    {% endunless %}
+
+    <script>
+      window.SHOP = {
+        customerId:  "{{ customer.id | default: '' }}",
+        loggedIn:    {% if customer %}true{% else %}false{% endif %},
+        hasSpun:     {% if customer.metafields.spin_wheel.coupon %}true{% else %}false{% endif %}
+      };
+    </script>
+  </head>
+
+  <body class="{% if product %}product-{{ product.handle }}{% endif %}{% if collection %}collection-{{ collection.handle }}{% endif %}{% if page %}page-handle-{{ page.handle }}{% endif %}">
+    {% sections 'header-group' %}
+
+    {{ content_for_layout }}
+
+    {% unless template contains 'age-only' %}
+      {% sections 'footer-group' %}
+    {% endunless %}
+
+    {{ 'swiper-bundle.min.js' | asset_url | script_tag }}
+ 
+    <script src="{{ 'base.js' | asset_url }}?v={{ cache_bust }}"></script>
+
+    <span id="money-format" style="display:none;">{{ shop.money_format }}</span>
+    <script>
+      let cartDrawer, cartOverlay;
+
+      window.shopMoneyFormat = document.getElementById('money-format').innerText.trim();
+
+      function formatMoney(cents) {
+        let amount = (parseInt(cents) / 100).toFixed(2);
+        let format = window.shopMoneyFormat || '';
+
+        format = format
+          .replace(/\{\{amount\}\}/g, amount)
+          .replace(/\{\{amount_no_decimals\}\}/g, Math.round(parseInt(cents) / 100))
+          .replace(/\{\{amount_with_comma_separator\}\}/g, amount.replace('.', ','))
+          .replace(/\{\{amount_no_decimals_with_comma_separator\}\}/g, Math.round(parseInt(cents) / 100));
+
+        return format || '$' + amount;
+      }
+
+      // INIT
+      document.addEventListener('DOMContentLoaded', function () {
+        cartDrawer = document.getElementById('cartDrawer');
+        cartOverlay = document.getElementById('cartOverlay');
+        const cartToggle = document.getElementById('cartToggle');
+        const cartClose = document.getElementById('cartClose');
+
+        fetch('/cart.js')
+          .then(res => res.json())
+          .then(cart => {
+            updateCartCount(cart.item_count);
+        });
+
+       cartDrawer = document.getElementById("cartDrawer");
+       
+        if (cartToggle) {
+          cartToggle.addEventListener('click', openCart);
+        }
+
+        if (cartOverlay) {
+          cartOverlay.addEventListener('click', closeCart);
+        }
+
+        if (cartClose) {
+          cartClose.addEventListener('click', closeCart);
+        }
+      });
+
+      // OPEN CART
+      function openCart() {
+        cartDrawer.classList.add('active');
+        cartOverlay.classList.add('active');
+        loadCart();
+      }
+
+      // CLOSE
+      function closeCart() {
+        cartDrawer.classList.remove('active');
+        cartOverlay.classList.remove('active');
+      }
+
+      // LOAD CART
+      function loadCart() {
+        fetch('/cart.js')
+          .then((res) => res.json())
+          .then((cart) => {
+            let html = '';
+
+            if (cart.items.length === 0) {
+              html = `
+            <div class="empty-cart">
+                <div class="crow-icon">
+                  <img src="{{ 'crown.png' | asset_url }}" alt="">
+                </div>
+                <h2>Your cart is empty</h2>
+                <p>Looks like you haven’t added anything yet.</p>
+                <a href="/collections/shop-merch" class="primary-btn">
+                  Continue Shopping
+                </a>
+            </div>
+      `;
+            } else {
+              cart.items.forEach((item) => {
+                html += `
+          <div class="modal-cart-item">
+
+            <div class="cart-item-img">
+              <img src="${item.image}">
+            </div>
+
+            <div class="cart-info">
+              <h3>${item.product_title}</h3>
+
+
+              <p class="price-text">${formatMoney(item.final_line_price)}</p>
+
+              <div class="quantity-box">
+                <button class="qty-minus" data-key="${item.key}">−</button>
+                <input type="number" value="${item.quantity}" min="1">
+                <button class="qty-plus" data-key="${item.key}">+</button>
+              </div>
+            </div>
+
+            <a href="#" class="remove-item" data-key="${item.key}">
+              <img src="{{ 'delete-icon.svg' | asset_url }}">
+            </a>
+
+          </div>
+        `;
+              });
+            }
+
+            document.getElementById('cartItems').innerHTML = html;
+            document.getElementById('cartSubtotal').innerText = formatMoney(cart.total_price);
+            updateCartCount(cart.item_count);
+            attachEvents();
+          });
+      }
+
+      // UPDATE CART
+      function updateCart(key, qty) {
+        fetch('/cart/change.js', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: key,
+            quantity: qty,
+          }),
+        }).then(() => loadCart());
+      }
+
+      function updateCartCount(count){
+        const cartCountEl = document.querySelector(".cart-count"); 
+        if(cartCountEl){
+          if(count && count > 0){
+            cartCountEl.innerText = count;
+            cartCountEl.style.display = "block";
+          } else {
+            cartCountEl.innerText = "0";
+          }
+        }
+      }
+
+      // EVENTS
+      function attachEvents() {
+        document.querySelectorAll('.qty-plus').forEach((btn) => {
+          btn.onclick = function () {
+            let key = this.dataset.key;
+            let input = this.parentElement.querySelector('input');
+            let qty = parseInt(input.value) + 1;
+            updateCart(key, qty);
+          };
+        });
+
+        document.querySelectorAll('.qty-minus').forEach((btn) => {
+          btn.onclick = function () {
+            let key = this.dataset.key;
+            let input = this.parentElement.querySelector('input');
+            let qty = parseInt(input.value) - 1;
+            if (qty >= 1) {
+              updateCart(key, qty);
+            }
+          };
+        });
+
+        document.querySelectorAll('.remove-item').forEach((btn) => {
+          btn.onclick = function (e) {
+            e.preventDefault();
+            let key = this.dataset.key;
+            updateCart(key, 0);
+          };
+        });
+      }
+    </script>
+
+    <!-- <script>
+        document.addEventListener("submit", function(e){
+          if(e.target.matches('form[action*="/cart/add"]')){
+            
+            e.preventDefault();
+            e.stopImmediatePropagation(); 
+
+            const formData = new FormData(e.target);
+
+            fetch('/cart/add.js', {
+              method: 'POST',
+              body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+              openCart();
+            })
+            .catch(err => {
+              console.error("Cart add error:", err);
+            });
+
+          }
+        }, true);
+
+    </script> -->
+    <script>
+      document.addEventListener("DOMContentLoaded", function(){
+
+        document.querySelectorAll('form[action="/cart/add"]').forEach(form => {
+
+          form.addEventListener("submit", function(e){
+            e.preventDefault();
+
+            const formData = new FormData(form);
+            const variantId = formData.get("id");
+
+            console.log("Variant ID:", variantId);
+
+            if(!variantId || variantId === "" || variantId === "null"){
+              alert("Please select all options properly");
+              console.log("Invalid Variant ID:", variantId);
+              return;
+            }
+
+            fetch('/cart/add.js', {
+              method: 'POST',
+              body: formData,
+              headers: { 'Accept': 'application/json' }
+            })
+            .then(res => res.json())
+            .then(data => {
+
+              console.log("Added:", data);
+
+              openCart();
+              loadCart();
+
+            })
+            .catch(err => {
+              console.error(err);
+              alert("Add to cart failed");
+            });
+
+          });
+
+        });
+
+      });
+    </script>
+  </body>
+</html>

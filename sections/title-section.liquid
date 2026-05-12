@@ -1,0 +1,30 @@
+<section class="section-title">
+  <div class="page-width">
+    <h1 class="section-title-text">
+      {{ section.settings.heading }}
+    </h1>
+  </div>
+</section>
+{% stylesheet %}
+  .section-title {
+    width: 100%;
+    text-align: center;
+  }
+{% endstylesheet %}
+{% schema %}
+{
+  "name": "Title Section",
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Title Section"
+    }
+  ]
+}
+{% endschema %}

@@ -1,0 +1,188 @@
+<section class="store-locator">
+  <div class="store-locator-container">
+    <h2 class="section-title-text">{{ section.settings.title }}</h2>
+    <div class="locator-grid">
+      <!-- LEFT SIDE -->
+      <div class="store-list-block">
+        <div class="search-wrapper">
+          <span class="search-icon"><img src="{{ 'search-icon.svg' | asset_url }}" alt="Search"></span>
+          <input type="text" id="store-search" placeholder="Search...">
+          <button id="reset-btn">✕</button>
+        </div>
+
+        <div id="store-results" class="store-results-lists">
+          {% for store in shop.metaobjects.store_locations.values %}
+            <div
+              class="store-item"
+              data-lat="{{ store.latitude }}"
+              data-lng="{{ store.longitude }}"
+            >
+              <h3>{{ store.store_name }}</h3>
+              <p>{{ store.address }}</p>
+              {% comment %}
+                {% if store.phone != blank %}
+                  <p>{{ store.phone }}</p>
+                {% endif %}
+              {% endcomment %}
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- RIGHT SIDE -->
+      {% comment %} <div id="map"></div>  {% endcomment %}
+     <div class="map">
+        <iframe
+          src="https://www.google.com/maps/embed?pb=...."
+          width="100%"
+          height="100%"
+          style="border:0;"
+        >
+        </iframe>
+      </div> 
+    </div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Store Locator",
+  "settings": [
+    {
+      "type": "text",
+      "id": "title",
+      "label": "Section Title"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Store Locator"
+    }
+  ]
+}
+{% endschema %}
+
+<script>
+  let map;
+  let markers = [];
+  let autocomplete;
+  let infoWindow;
+
+  function initMap() {
+    map = new google.maps.Map(document.getElementById('map'), {
+        zoom: 4,
+        center: { lat: 20.5937, lng: 78.9629 }, 
+        styles: [
+          {
+            "elementType": "geometry",
+            "stylers": [{ "color": "#e4e0d6" }]
+          },
+          {
+            "elementType": "labels.text.fill",
+            "stylers": [{ "color": "#515458" }]
+          },
+          {
+            "elementType": "labels.text.stroke",
+            "stylers": [{ "color": "" }]
+          },
+          {
+            "featureType": "road",
+            "elementType": "geometry",
+            "stylers": [{ "color": "#ffffff" }]
+          },
+          {
+            "featureType": "water",
+            "elementType": "geometry",
+            "stylers": [{ "color": "#dad7cd" }]
+          },
+          {
+            "featureType": "poi",
+            "stylers": [{ "visibility": "off" }]
+          }
+        ]
+      });
+
+      infoWindow = new google.maps.InfoWindow();
+
+    const storeItems = document.querySelectorAll('.store-item');
+
+    storeItems.forEach((item) => {
+      const lat = parseFloat(item.dataset.lat);
+      const lng = parseFloat(item.dataset.lng);
+      const storeName = item.querySelector('h3').innerText;
+      const address = item.querySelector('p').innerText;
+
+      const marker = new google.maps.Marker({
+        position: { lat, lng },
+        map: map,
+        icon: {
+          path: google.maps.SymbolPath.CIRCLE,
+          scale: 7,
+          fillColor: "#6B1A18", 
+          fillOpacity: 1,
+          strokeWeight: 0
+        }
+      });
+
+      markers.push({ marker, item });
+
+      marker.addListener('click', () => {
+        infoWindow.setContent(`
+        <div style="font-family:Arial;padding:5px;">
+          <strong>${storeName}</strong><br/>
+          ${address}<br/>
+          <a href="https://www.google.com/maps?q=${lat},${lng}" target="_blank">
+            View on Google Maps
+          </a>
+        </div>
+      `);
+        infoWindow.open(map, marker);
+      });
+
+      item.addEventListener('click', () => {
+        map.setCenter({ lat, lng });
+        map.setZoom(14);
+
+        google.maps.event.trigger(marker, 'click');
+      });
+    });
+
+    const searchInput = document.getElementById('store-search');
+    const resetBtn = document.getElementById('reset-btn');
+
+    searchInput.addEventListener('input', function () {
+      const value = this.value.toLowerCase();
+
+      markers.forEach((obj) => {
+        const match = obj.item.innerText.toLowerCase().includes(value);
+        obj.item.style.display = match ? 'block' : 'none';
+        obj.marker.setVisible(match);
+      });
+    });
+
+    if (resetBtn) {
+      resetBtn.addEventListener('click', function () {
+        searchInput.value = '';
+
+        markers.forEach((obj) => {
+          obj.item.style.display = 'block';
+          obj.marker.setVisible(true);
+        });
+
+        map.setZoom(10);
+      });
+    }
+
+    // GOOGLE AUTOCOMPLETE
+    autocomplete = new google.maps.places.Autocomplete(searchInput);
+    autocomplete.addListener('place_changed', function () {
+      const place = autocomplete.getPlace();
+      if (!place.geometry) return;
+
+      map.setCenter(place.geometry.location);
+      map.setZoom(13);
+    });
+  }
+</script>
+
+{% comment %} <script async src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAWWG29qo7neLpzt7Nzi2DBQVvWuSKNVoo&libraries=places&callback=initMap"></script>  {% endcomment %}

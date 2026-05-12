@@ -1,0 +1,634 @@
+<section class="hero-section" style="background-image: url({{ section.settings.bg_image | image_url}});">
+  <div class="hero-content">
+    {% if section.settings.popup_trigger_text != blank %}
+      <!-- onclick removed — JS handles this via setupTriggerButton() -->
+      <p class="popup-trigger">
+        {{ section.settings.popup_trigger_text }}
+      </p>
+    {% endif %}
+
+    {% if section.settings.hero_title != blank %}
+      <h1 class="hero-title">
+        {{ section.settings.hero_title }}
+      </h1>
+    {% endif %}
+
+    {% if section.settings.hero_image != blank %}
+      <img src="{{ section.settings.hero_image | image_url }}" class="hero-image" alt="Hero Image">
+    {% endif %}
+
+    <div class="hero-bottom-text">
+      <span class="bottom-left">
+        {{ section.settings.bottom_left_text }}
+      </span>
+      <span class="bottom-right">
+        {{ section.settings.bottom_right_text }}
+      </span>
+    </div>
+  </div>
+</section>
+
+<div id="customPopup" class="popup-overlay">
+  <div class="popup-box">
+    <button class="close-btn" onclick="closePopup()">
+      <img src="{{ 'close-icon.svg' | asset_url}}" alt="">
+    </button>
+
+    {% if section.settings.popup_top_image != blank %}
+      <img src="{{ section.settings.popup_top_image | image_url }}" class="popup-top-image">
+    {% endif %}
+
+    <h2>{{ section.settings.popup_title }}</h2>
+    <h3>{{ section.settings.popup_sub_title }}</h3>
+
+    <!-- SLOT MACHINE -->
+    <div class="slot-machine" style="background-image: url({{ 'spin-game-bg.svg' | asset_url }});">
+      <div class="reel"><div class="reel-inner" id="reel1"></div></div>
+      <div class="reel"><div class="reel-inner" id="reel2"></div></div>
+      <div class="reel"><div class="reel-inner" id="reel3"></div></div>
+    </div>
+
+    <!-- FORM -->
+    <div id="formBlock">
+      <form id="spinForm">
+        <input
+          type="text"
+          name="name"
+          id="spinName"
+          placeholder="NAME*"
+          required
+          value="{{ customer.first_name | default: '' }}"
+        >
+        <input
+          type="email"
+          name="email"
+          id="spinEmail"
+          placeholder="EMAIL*"
+          required
+          value="{{ customer.email | default: '' }}"
+        >
+        <div class="popup-buttons">
+          <button type="submit" id="spinSubmitBtn" class="primary-btn">
+            {{ section.settings.signup_button_text | default: 'Sign me up' }}
+          </button>
+          <button type="button" class="secondary-btn" onclick="closePopup()">
+            {{ section.settings.no_button_text }}
+          </button>
+        </div>
+      </form>
+      <p class="legal-text">{{ section.settings.legal_text }}</p>
+    </div>
+
+    <!-- WIN SCREEN -->
+    <div id="winBlock" class="winblock-card" style="display:none;">
+      <h3 id="winTitle">YOU WIN!</h3>
+      <p id="couponSubtext" style="font-size:12px; opacity:0.7; margin-bottom:6px;"></p>
+
+      <!-- Expiry badge -->
+      <p id="couponExpiry" style="display:none; font-size:11px; color:#6B0F1A;
+         opacity:0.6; margin-bottom:12px; letter-spacing:1px;"></p>
+
+      <div class="coupon-box">
+        <div class="coupon-code" style="flex-direction:column;">
+          <p>Your Coupon Code:</p>
+          <div style="display:flex; justify-content:center; align-items:center; gap:14px;">
+            <span id="couponCode"></span>
+            <div style="display:flex; justify-content:center; gap:8px;">
+              <button id="copyBtn" class="primary-btn" type="button" onclick="copyCode()">COPY</button>
+              <div id="copiedMsg" class="secondary-btn" style="display:none;">COPIED</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Auto-apply checkout button -->
+        <button
+          id="shopNowBtn"
+          class="secondary-btn"
+          style="margin-top:10px; width:100%; padding:12px 15px; font-size:14px;"
+        >
+          SHOP NOW - CODE AUTO-APPLIED
+        </button>
+
+        <!-- Create account nudge for guests only -->
+        <div id="createAccountNudge" style="display:none; margin-top:12px;
+             border-top:1px solid rgba(107,15,26,0.2); padding-top:12px; text-align:center;">
+          <p style="font-size:11px; opacity:0.75; margin-bottom:6px;">
+            Want your code saved to your account?
+          </p>
+          <a id="createAccountLink" href="/account/register"
+             style="font-size:11px; font-weight:700; letter-spacing:1.5px;
+                    color:#6B0F1A; text-decoration:underline;">
+            CREATE AN ACCOUNT →
+          </a>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  // ── Customer state injected from Liquid ───────────────────────────────────
+  window.SHOP = {
+    customerId: "{{ customer.id | default: '' }}",
+    loggedIn:   {% if customer %}true{% else %}false{% endif %},
+    hasSpun:    {% if customer.metafields.spin_wheel.coupon %}true{% else %}false{% endif %}
+  };
+
+  // ── Asset URLs ─────────────────────────────────────────────────────────────
+  var LOGO_URL = "{{ 'spin-logo.png' | asset_url }}";
+  var STAR_URL = "{{ 'cross-red.svg' | asset_url }}";
+  var ITEM_H   = 48;
+
+  // ── Open / Close ───────────────────────────────────────────────────────────
+  function openPopup() {
+    document.getElementById('customPopup').style.display = 'flex';
+  }
+
+  function closePopup() {
+    document.getElementById('customPopup').style.display = 'none';
+    sessionStorage.setItem('sp_closed', '1');
+  }
+
+  // ── localStorage helpers ───────────────────────────────────────────────────
+  function saveToLocal(code, discount, expiresAt) {
+    localStorage.setItem('sp_code',       code);
+    localStorage.setItem('sp_discount',   String(discount));
+    localStorage.setItem('sp_expires_at', expiresAt || '');
+  }
+
+  function clearLocal() {
+    localStorage.removeItem('sp_code');
+    localStorage.removeItem('sp_discount');
+    localStorage.removeItem('sp_expires_at');
+  }
+
+  // Returns {code, discount} if valid and not expired, else null
+  function getValidLocalCode() {
+    var code      = localStorage.getItem('sp_code');
+    var discount  = localStorage.getItem('sp_discount');
+    var expiresAt = localStorage.getItem('sp_expires_at');
+
+    if (!code || !discount) return null;
+
+    // Guard — ignore any placeholder values that aren't real codes
+    if (code === 'CHECK YOUR EMAIL' || !code.startsWith('LUCKY') || code.length < 8) {
+      clearLocal();
+      return null;
+    }
+
+    if (expiresAt) {
+      var expiry = new Date(expiresAt);
+      var now    = new Date();
+      if (now > expiry) {
+        clearLocal();
+        return null;
+      }
+    }
+
+    return { code: code, discount: discount };
+  }
+
+  // ── Reel helpers ───────────────────────────────────────────────────────────
+
+  // Fresh state — all logos (new visitors before spin)
+  function createInitialReels() {
+    for (var i = 1; i <= 3; i++) {
+      var reel = document.getElementById('reel' + i);
+      reel.innerHTML = '';
+      for (var j = 0; j < 8; j++) {
+        reel.innerHTML += '<div><img src="' + LOGO_URL + '"></div>';
+      }
+      reel.style.transition = 'none';
+      reel.style.transform  = 'translateY(0px)';
+    }
+  }
+
+  // Snap reels to correct stopped position (NO animation)
+  // Used for returning visitors — prevents wrong crown count on refresh
+  function setReelsToResult(discount) {
+    var logoCount = Math.round(parseInt(discount) / 10); // 1, 2, or 3
+
+    var reelsResult;
+    if      (logoCount === 1) reelsResult = [STAR_URL, STAR_URL, LOGO_URL];
+    else if (logoCount === 2) reelsResult = [STAR_URL, LOGO_URL, LOGO_URL];
+    else                      reelsResult = [LOGO_URL, LOGO_URL, LOGO_URL];
+
+    for (var i = 1; i <= 3; i++) {
+      var reel = document.getElementById('reel' + i);
+      reel.innerHTML = '';
+
+      for (var j = 0; j < 10; j++) {
+        var img = Math.random() > 0.5 ? LOGO_URL : STAR_URL;
+        reel.innerHTML += '<div><img src="' + img + '"></div>';
+      }
+
+      reel.innerHTML += '<div><img src="' + reelsResult[i - 1] + '"></div>';
+
+      var totalItems = reel.children.length;
+      var move       = (totalItems - 1) * ITEM_H;
+
+      reel.style.transition = 'none';
+      reel.style.transform  = 'translateY(-' + move + 'px)';
+    }
+  }
+
+  // ── Show blocks ────────────────────────────────────────────────────────────
+
+  function showFormBlock() {
+    document.getElementById('winBlock').style.display  = 'none';
+    document.getElementById('formBlock').style.display = 'block';
+  }
+
+  // ── Show win screen ────────────────────────────────────────────────────────
+  function showWinScreen(code, discount, isExisting) {
+    document.getElementById('formBlock').style.display = 'none';
+    document.getElementById('winBlock').style.display  = 'flex';
+
+    // Reset UI state
+    document.getElementById('copyBtn').style.display      = 'inline-block';
+    document.getElementById('copiedMsg').style.display    = 'none';
+    document.getElementById('couponExpiry').style.display = 'none';
+    document.getElementById('shopNowBtn').innerText       = 'SHOP NOW - CODE AUTO-APPLIED';
+
+    var nudge = document.getElementById('createAccountNudge');
+    if (nudge) nudge.style.display = 'none';
+
+    if (isExisting) {
+      document.getElementById('winTitle').innerText      = 'YOUR SAVED ' + discount + '% DISCOUNT';
+      document.getElementById('couponSubtext').innerText = 'You already claimed this — use it at checkout!';
+    } else {
+      document.getElementById('winTitle').innerText      = 'YOU WIN! ' + discount + '% OFF';
+      document.getElementById('couponSubtext').innerText = 'Copy your code and use it at checkout.';
+    }
+
+    document.getElementById('couponCode').innerText = code;
+
+    // Expiry countdown
+    var expiresAt = localStorage.getItem('sp_expires_at');
+    var expiryEl  = document.getElementById('couponExpiry');
+    if (expiresAt && expiryEl) {
+      var expiry   = new Date(expiresAt);
+      var now      = new Date();
+      var daysLeft = Math.ceil((expiry - now) / (1000 * 60 * 60 * 24));
+      if (daysLeft > 0) {
+        expiryEl.innerText     = 'Expires in ' + daysLeft + (daysLeft === 1 ? ' day' : ' days');
+        expiryEl.style.display = 'block';
+        expiryEl.style.color   = '#6B0F1A';
+      } else {
+        expiryEl.innerText     = 'Code expired';
+        expiryEl.style.color   = 'red';
+        expiryEl.style.display = 'block';
+      }
+    }
+
+    // Shop Now — auto applies code
+    document.getElementById('shopNowBtn').onclick = function() {
+      window.location.href = '/discount/' + code + '?redirect=/collections/all';
+    };
+
+    // Create account nudge — guests only
+    if (!window.SHOP.loggedIn && nudge) {
+      nudge.style.display = 'block';
+      document.getElementById('createAccountLink').href =
+        '/account/register?hint=' + encodeURIComponent(code);
+    }
+  }
+
+  // ── Show redeemed screen (code already used at checkout) ──────────────────
+  function showRedeemedScreen(discount) {
+    document.getElementById('formBlock').style.display = 'none';
+    document.getElementById('winBlock').style.display  = 'flex';
+
+    // Reset + hide elements not needed
+    document.getElementById('couponExpiry').style.display    = 'none';
+    document.getElementById('copyBtn').style.display         = 'none';
+    document.getElementById('copiedMsg').style.display       = 'none';
+    document.getElementById('createAccountNudge').style.display = 'none';
+
+    document.getElementById('winTitle').innerText      = 'YOU USED YOUR ' + discount + '% DISCOUNT!';
+    document.getElementById('couponSubtext').innerText = 'Glad you grabbed it! Stay tuned for future offers.';
+    document.getElementById('couponCode').innerText    = '✓ Redeemed';
+
+    // Change button to Browse Store
+    var btn       = document.getElementById('shopNowBtn');
+    btn.innerText = 'BROWSE OUR STORE';
+    btn.onclick   = function() {
+      window.location.href = '/collections/all';
+    };
+  }
+
+  // ── Spin animation + API call ──────────────────────────────────────────────
+  function startSpin(name, email) {
+    var result   = Math.floor(Math.random() * 3) + 1; // 1, 2, or 3
+    var discount = result * 10;                        // 10, 20, or 30
+
+    // Deterministic result — exact logo count matches discount
+    var reelsResult;
+    if      (result === 1) reelsResult = [STAR_URL, STAR_URL, LOGO_URL];
+    else if (result === 2) reelsResult = [STAR_URL, LOGO_URL, LOGO_URL];
+    else                   reelsResult = [LOGO_URL, LOGO_URL, LOGO_URL];
+
+    // Shuffle positions so winning symbols aren't always on same side
+    reelsResult.sort(function() { return Math.random() - 0.5; });
+
+    // Animate each reel
+    for (var i = 1; i <= 3; i++) {
+      var reel = document.getElementById('reel' + i);
+      reel.innerHTML = '';
+
+      for (var j = 0; j < 10; j++) {
+        var img = Math.random() > 0.5 ? LOGO_URL : STAR_URL;
+        reel.innerHTML += '<div><img src="' + img + '"></div>';
+      }
+
+      reel.innerHTML += '<div><img src="' + reelsResult[i - 1] + '"></div>';
+
+      var totalItems = reel.children.length;
+      var move       = (totalItems - 1) * ITEM_H;
+
+      reel.style.transition = 'none';
+      reel.style.transform  = 'translateY(0px)';
+      reel.offsetHeight; // force reflow
+
+      // Stagger each reel for visual effect
+      ;(function(reelEl, moveVal, delay) {
+        setTimeout(function() {
+          reelEl.style.transition = 'transform 2.5s ease-out';
+          reelEl.style.transform  = 'translateY(-' + moveVal + 'px)';
+        }, delay);
+      })(reel, move, i * 80);
+    }
+
+    var btn      = document.getElementById('spinSubmitBtn');
+    btn.disabled = true;
+    btn.innerText = 'Spinning...';
+
+    // After animation — call backend
+    setTimeout(function() {
+      fetch('/tools/spin/api/spin', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ firstName: name, email: email, discount: discount })
+      })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+
+        if (data.success) {
+          // Only save real codes to localStorage
+          saveToLocal(data.code, data.discount, data.expires_at);
+          sessionStorage.setItem('sp_claimed', '1');
+          setReelsToResult(data.discount);
+          showWinScreen(data.code, data.discount, false);
+
+        } else if (data.error === 'You have already claimed a discount.') {
+          if (window.SHOP.loggedIn && window.SHOP.customerId) {
+            // Logged-in → fetch real code from backend
+            fetchAndShowExistingCode();
+          } else {
+            // Guest → check localStorage for a real saved code
+            var saved = getValidLocalCode();
+            if (saved) {
+              setReelsToResult(parseInt(saved.discount));
+              showWinScreen(saved.code, saved.discount, true);
+            } else {
+              // No real code in localStorage — never save placeholder
+              // Just show message — do NOT call saveToLocal or showWinScreen with fake code
+              document.getElementById('formBlock').style.display  = 'none';
+              document.getElementById('winBlock').style.display   = 'flex';
+              document.getElementById('winTitle').innerText       = 'Already Claimed!';
+              document.getElementById('couponSubtext').innerText  = 'Check your email for your discount code.';
+              document.getElementById('couponCode').innerText     = '';
+              document.getElementById('copyBtn').style.display    = 'none';
+              document.getElementById('shopNowBtn').style.display = 'none';
+              document.getElementById('couponExpiry').style.display = 'none';
+              var nudge = document.getElementById('createAccountNudge');
+              if (nudge) nudge.style.display = 'none';
+            }
+          }
+
+        } else {
+          // Real backend error
+          document.getElementById('formBlock').style.display = 'none';
+          document.getElementById('winBlock').style.display  = 'flex';
+          document.getElementById('winTitle').innerText      = 'Something went wrong';
+          document.getElementById('couponSubtext').innerText = '';
+          document.getElementById('couponCode').innerText    = data.error || 'Please try again.';
+          document.getElementById('copyBtn').style.display   = 'none';
+          document.getElementById('shopNowBtn').style.display = 'none';
+          btn.disabled  = false;
+          btn.innerText = 'Sign me up';
+        }
+
+      })
+      .catch(function() {
+        document.getElementById('winTitle').innerText   = 'Connection Error';
+        document.getElementById('couponCode').innerText = 'Please try again later.';
+        btn.disabled  = false;
+        btn.innerText = 'Sign me up';
+      });
+
+    }, 3000);
+  }
+
+  // ── Fetch existing code for logged-in customer ─────────────────────────────
+  function fetchAndShowExistingCode() {
+    fetch('/tools/spin/api/coupon?customerId=' + window.SHOP.customerId)
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+
+      if (!data.coupon) {
+        // No coupon found — show fresh spin form
+        createInitialReels();
+        showFormBlock();
+        setupFormSubmit();
+        return;
+      }
+
+      if (data.coupon.used) {
+        // Code already redeemed at checkout — show redeemed screen
+        setReelsToResult(data.coupon.discount);
+        showRedeemedScreen(data.coupon.discount);
+      } else {
+        // Code still valid — show it
+        saveToLocal(data.coupon.code, data.coupon.discount, data.coupon.expires_at);
+        setReelsToResult(data.coupon.discount);
+        showWinScreen(data.coupon.code, data.coupon.discount, true);
+      }
+
+    })
+    .catch(function() { closePopup(); });
+  }
+
+  // ── Copy code ──────────────────────────────────────────────────────────────
+  function copyCode() {
+    var code = document.getElementById('couponCode').innerText;
+    navigator.clipboard.writeText(code);
+    document.getElementById('copyBtn').style.display   = 'none';
+    document.getElementById('copiedMsg').style.display = 'inline-flex';
+  }
+
+  // ── Setup form submit (prevents duplicate listeners) ───────────────────────
+  function setupFormSubmit() {
+    var form = document.getElementById('spinForm');
+    if (!form || form.dataset.listenerAdded) return;
+    form.dataset.listenerAdded = 'true';
+
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+      var name  = document.getElementById('spinName').value.trim();
+      var email = document.getElementById('spinEmail').value.trim();
+      if (!name || !email) {
+        alert('Please fill in all fields.');
+        return;
+      }
+      startSpin(name, email);
+    });
+  }
+
+  // ── Setup trigger button ───────────────────────────────────────────────────
+  // Handles what happens when customer clicks "FEELING LUCKY?" text
+  function setupTriggerButton() {
+    var trigger = document.querySelector('.popup-trigger');
+    if (!trigger || trigger.dataset.listenerAdded) return;
+    trigger.dataset.listenerAdded = 'true';
+
+    trigger.addEventListener('click', function(e) {
+      e.preventDefault();
+      openPopup();
+
+      // Logged-in + already spun → fetch from backend
+      if (window.SHOP.loggedIn && window.SHOP.hasSpun) {
+        fetchAndShowExistingCode();
+        return;
+      }
+
+      // Guest with saved valid code → show it
+      var saved = getValidLocalCode();
+      if (saved) {
+        setReelsToResult(parseInt(saved.discount));
+        showWinScreen(saved.code, saved.discount, true);
+        return;
+      }
+
+      // Fresh → show spin form
+      createInitialReels();
+      showFormBlock();
+      setupFormSubmit();
+    });
+  }
+
+  // ── On page load ───────────────────────────────────────────────────────────
+  document.addEventListener('DOMContentLoaded', function() {
+
+    // Always setup trigger button regardless of customer state
+    setupTriggerButton();
+
+    // CASE 1: Logged-in + already spun
+    // → NO auto-popup. Trigger button handles it manually.
+    if (window.SHOP.loggedIn && window.SHOP.hasSpun) {
+      return;
+    }
+
+    // CASE 2: Guest with valid saved code
+    // → NO auto-popup. Trigger button handles it manually.
+    var saved = getValidLocalCode();
+    if (saved) {
+      return;
+    }
+
+    // CASE 3: Closed popup this session → don't auto-show again
+    if (sessionStorage.getItem('sp_closed')) return;
+
+    // CASE 4: Fresh visitor → auto-show spin popup after 3s
+    setTimeout(function() {
+      createInitialReels();
+      openPopup();
+      setupFormSubmit();
+    }, 3000);
+
+  });
+</script>
+
+{% schema %}
+{
+  "name": "Custom Hero With Popup",
+  "settings": [
+    {
+      "type": "image_picker",
+      "id": "bg_image",
+      "label": "Background Image"
+    },
+    {
+      "type": "text",
+      "id": "popup_trigger_text",
+      "label": "Popup Trigger Text"
+    },
+    {
+      "type": "textarea",
+      "id": "hero_title",
+      "label": "Hero Title"
+    },
+    {
+      "type": "image_picker",
+      "id": "hero_image",
+      "label": "Hero Image"
+    },
+    {
+      "type": "text",
+      "id": "bottom_left_text",
+      "label": "Bottom Left Text"
+    },
+    {
+      "type": "text",
+      "id": "bottom_right_text",
+      "label": "Bottom Right Text"
+    },
+    {
+      "type": "image_picker",
+      "id": "popup_top_image",
+      "label": "Top Image"
+    },
+    {
+      "type": "text",
+      "id": "popup_title",
+      "label": "Popup Title",
+      "default": "FEELING LUCKY? SPIN TO WIN"
+    },
+    {
+      "type": "text",
+      "id": "popup_sub_title",
+      "label": "Popup Sub Title",
+      "default": "SPIN TO WIN UP TO 30% OFF MERCH."
+    },
+    {
+      "type": "text",
+      "id": "signup_button_text",
+      "label": "Signup Button",
+      "default": "SIGN ME UP"
+    },
+    {
+      "type": "text",
+      "id": "no_button_text",
+      "label": "No Button",
+      "default": "NO THANKS"
+    },
+    {
+      "type": "textarea",
+      "id": "legal_text",
+      "label": "Legal Text"
+    },
+    {
+      "type": "number",
+      "id": "discount_percentage",
+      "label": "Discount Percentage",
+      "default": 25
+    }
+  ],
+  "presets": [
+    {
+      "name": "Custom Hero With Popup"
+    }
+  ]
+}
+{% endschema %}

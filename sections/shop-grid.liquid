@@ -1,0 +1,113 @@
+<section class="shop-grid">
+  <div class="page-width">
+    {% if section.settings.title != blank %}
+      <h2 class="shop-title">{{ section.settings.title }}</h2>
+    {% endif %}
+    <div class="grid">
+     {% assign selected_collection = collection %}
+      {% if selected_collection.products_count > 0 %}
+        {% paginate selected_collection.products by section.settings.products_limit %}
+          {% for product in selected_collection.products %}
+              <div class="grid-item">
+                <a href="{{ product.url }}">
+                  <div class="shop-product-image">
+                    {% if product.images.size > 1 %}
+                      <img
+                        class="primary-image"
+                        src="{{ product.featured_image | image_url }}"
+                        alt="{{ product.title }}"
+                      >
+                      <img class="hover-image" src="{{ product.images[1] | image_url }}" alt="{{ product.title }}">
+                    {% else %}
+                      <img src="{{ product.featured_image | image_url }}" alt="{{ product.title }}">
+                    {% endif %}
+                  </div>
+
+                  <div class="grid-ft-block">
+                    <h3 class="shop-product-title">{{ product.title }}</h3>
+                    <div class="shop-product-price">
+                      {{ product.price | money }}
+                    </div>
+                  </div>
+                </a>
+              </div>
+        {% endfor %}
+
+          {% if paginate.pages > 1 %}
+            <div class="pagination">
+              <!-- PREV -->
+              {% if paginate.previous %}
+                <a href="{{ paginate.previous.url }}" class="arrow prev">
+                  <img src="{{ 'prev-arrow.svg' | asset_url }}" alt="Previous">
+                </a>
+              {% else %}
+                <span class="arrow prev disabled">
+                  <img src="{{ 'prev-arrow.svg' | asset_url }}" alt="Previous">
+                </span>
+              {% endif %}
+
+              <!-- PAGE NUMBERS -->
+              {% for part in paginate.parts %}
+                {% if part.is_link %}
+                  <a href="{{ part.url }}" class="page-number">
+                    {{ part.title }}
+                  </a>
+                {% else %}
+                  <span class="page-number active">
+                    {{ part.title }}
+                  </span>
+                {% endif %}
+              {% endfor %}
+
+              <!-- NEXT -->
+              {% if paginate.next %}
+                <a href="{{ paginate.next.url }}" class="arrow next">
+                  <img src="{{ 'next-arrow.svg' | asset_url }}" alt="Next">
+                </a>
+              {% else %}
+                <span class="arrow next disabled">
+                  <img src="{{ 'next-arrow.svg' | asset_url }}" alt="Next">
+                </span>
+              {% endif %}
+            </div>
+            {% endif %}
+            {% endpaginate %}
+
+            {% else %}
+              <p>No products found in collection.</p>
+            {% endif %}
+    </div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Shop Grid",
+  "settings": [
+    {
+      "type": "text",
+      "id": "title",
+      "label": "Section Title"
+    },
+    {
+      "type": "collection",
+      "id": "collection",
+      "label": "Select Collection"
+    },
+    {
+      "type": "range",
+      "id": "products_limit",
+      "label": "Number of products",
+      "min": 3,
+      "max": 27,
+      "step": 3,
+      "default": 9
+    }
+  ],
+  "presets": [
+    {
+      "name": "Shop Grid"
+    }
+  ]
+}
+{% endschema %}

@@ -1,0 +1,253 @@
+<section class="contact-split" style="background: {{ section.settings.right_bg }};">
+  <div class="contact-wrapper">
+    
+    <!-- LEFT SIDE -->
+    <div class="contact-left">
+      {% if section.settings.left_image != blank %}
+        <img src="{{ section.settings.left_image | image_url}}" alt="">
+      {% endif %}
+
+      <div class="overlay">
+        
+        {% if section.settings.left_icon != blank %}
+          <img class="icon" src="{{ section.settings.left_icon | image_url}}" alt="">
+        {% endif %}
+
+        <h3>{{ section.settings.overlay_heading }}</h3>
+        <p>{{ section.settings.overlay_text }}</p>
+      </div>
+    </div>
+
+    <!-- RIGHT SIDE -->
+    <div class="contact-right">
+      
+      {% if section.settings.right_icon != blank %}
+        <img class="crown-icon" src="{{ section.settings.right_icon | image_url}}" alt="">
+      {% endif %}
+
+      <h2>{{ section.settings.form_heading }}</h2>
+      <p class="form-description">{{ section.settings.form_description }}</p>
+
+      {% form 'contact' %}
+        <input type="text" name="contact[name]" placeholder="Name*" required>
+        <input type="email" name="contact[email]" placeholder="Email*" required>
+        <input type="tel" name="contact[phone]" placeholder="Phone*">
+        <textarea name="contact[body]" placeholder="Message*" required></textarea>
+        <button type="submit" class="secondary-btn">{{ section.settings.button_text }}</button>
+      {% endform %}
+
+    </div>
+
+  </div>
+</section>
+
+{% stylesheet %}
+.contact-wrapper {
+  display: flex;
+  min-height: 850px;
+  border-bottom: 1px solid var(--primary-color);
+  margin-top: 95px;
+}
+.contact-left {
+  border-right: 1px solid var(--primary-color);
+}
+.contact-left,
+.contact-right {
+  width: 50%;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.contact-left img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.contact-left .overlay {
+  position: absolute;
+  height: 100%;
+  width: 100%;
+  max-width: 350px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--white-text-color);
+  text-align: center;
+}
+.contact-left .overlay h3 {
+  font-size: 20px;
+  font-family: var(--font-WideBold);
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+.contact-left .overlay p{
+  font-size: 13px;
+  line-height: 20px;
+  max-width: 220px;
+}
+.contact-left .icon {
+  width: 34px;
+  height: auto;
+  margin-bottom: 35px;  
+}
+.contact-right {
+  max-width: 410px;
+  padding: 25px;
+  display: flex;
+  align-items: center;
+  margin: 0 auto;
+}
+.contact-right .crown-icon {
+  margin-bottom: 90px;  
+  width: 90px; 
+}
+.contact-right h2 {
+  font-family: var(--font-WideBlack);
+  color: var(--primary-color);
+  text-transform: uppercase;
+  width: 100%;
+  text-align: center;
+  margin-bottom: 25px;   
+}
+.contact-right .form-description{
+  width: 100%;
+  text-align: center;
+  font-size: 14px;
+  color: var(--primary-color);
+}
+.contact-form {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  width: 100%;  
+  margin-top: 60px;
+}
+.contact-right input,
+.contact-right textarea {
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--primary-color);
+  border-radius: 0;
+  box-shadow: none;
+  outline: none;
+  margin-bottom: 25px;
+  padding: 8px 0;
+  font-family: var( --font-WideSemiBold);
+  font-size: 12px;
+  color: var(--primary-color);
+  text-transform: uppercase;
+  text-align: center;
+}
+.contact-right textarea {
+  min-height: 60px;
+  resize: none;  
+}
+.contact-right input::placeholder,
+.contact-right textarea::placeholder {
+  color: var(--primary-color);
+  opacity: 0.5;
+}
+.contact-right .secondary-btn {
+  margin-top: 100px; 
+}
+
+@media(max-width: 991px) {
+    .contact-wrapper {
+        margin-top: 74px;
+    }
+} 
+
+@media(max-width: 767px) { 
+   .contact-form {
+     margin-top: 30px;
+  }
+    .contact-wrapper {
+        flex-direction: column;
+    }
+    .contact-left, .contact-right {
+        width: 100%;
+    }
+    .contact-right .crown-icon {
+        margin-bottom: 30px;
+        width: 50px;
+
+    }
+    .contact-right h2 {
+        margin-bottom: 30px;
+        font-size: 20px;
+    }
+    .contact-right .primary-btn {
+        margin-top: 0px;
+    }
+    .contact-right .secondary-btn {
+      margin-top: 20px;
+    }
+}
+{% endstylesheet %}
+
+
+{% schema %}
+{
+  "name": "Contact Form Section",
+  "settings": [
+    {
+      "type": "image_picker",
+      "id": "left_image",
+      "label": "Left Background Image"
+    },
+    {
+      "type": "image_picker",
+      "id": "left_icon",
+      "label": "Left Eye Icon"
+    },
+    {
+      "type": "text",
+      "id": "overlay_heading",
+      "label": "Overlay Heading",
+      "default": "SENSITIVE CONTENT"
+    },
+    {
+      "type": "textarea",
+      "id": "overlay_text",
+      "label": "Overlay Text"
+    },
+    {
+      "type": "image_picker",
+      "id": "right_icon",
+      "label": "Right Crown Icon"
+    },
+    {
+      "type": "text",
+      "id": "form_heading",
+      "label": "Form Heading",
+      "default": "Contact Us"
+    },
+     {
+      "type": "textarea",
+      "id": "form_description",
+      "label": "Form Description"
+    },
+    {
+      "type": "text",
+      "id": "button_text",
+      "label": "Button Text",
+      "default": "Submit"
+    },
+    {
+      "type": "color",
+      "id": "right_bg",
+      "label": "Right Background Color",
+      "default": "#7b0f0f"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Contact Form Section"
+    }
+  ]
+}
+{% endschema %}

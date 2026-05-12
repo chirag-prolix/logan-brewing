@@ -1,0 +1,79 @@
+<section class="product-details-section">
+  <div class="details-container">
+    
+    <div class="details-left">
+      <h1>{{ section.settings.left_title }}</h1>
+    </div>
+
+    <div class="details-center">
+      {% if section.settings.product_image %}
+        <img src="{{ section.settings.product_image | image_url}}" alt="">
+      {% endif %}
+    </div>
+    <div class="details-right">
+      <div class="details-stats">
+        <div>
+          <p class="label">ABV</p>
+          <p class="value">{{ section.settings.abv }}</p>
+        </div>
+        <div>
+          <p class="label">IBU</p>
+          <p class="value">{{ section.settings.ibu }}</p>
+        </div>
+        <div>
+          <p class="label">EBC</p>
+          <p class="value">{{ section.settings.ebc }}</p>
+        </div>
+      </div>
+
+      <p class="description">
+        {{ section.settings.description }}
+      </p>
+    </div>
+  </div>
+</section>
+
+
+
+{% schema %}
+{
+  "name": "Product Dynamic Details",
+  "settings": [
+    {
+      "type": "text",
+      "id": "left_title",
+      "label": "Left Side Title"
+    },
+    {
+      "type": "image_picker",
+      "id": "product_image",
+      "label": "Product Image"
+    },
+    {
+      "type": "text",
+      "id": "abv",
+      "label": "ABV"
+    },
+    {
+      "type": "text",
+      "id": "ibu",
+      "label": "IBU"
+    },
+    {
+      "type": "text",
+      "id": "ebc",
+      "label": "EBC"
+    },
+    {
+      "type": "textarea",
+      "id": "description",
+      "label": "Description"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Product Dynamic Details"
+    }
+  ]
+}
+{% endschema %}

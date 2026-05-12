@@ -1,0 +1,728 @@
+{% assign sid = section.id %}
+
+<section class="hero-section" style="background-image: url({{ section.settings.bg_image | image_url: width: 1920 }});">
+  <div class="hero-content">
+    {% if section.settings.popup_trigger_text != blank %}
+      <p class="popup-trigger" data-popup-trigger="{{ sid }}">
+        {{ section.settings.popup_trigger_text }}
+      </p>
+    {% endif %}
+
+    {% if section.settings.hero_title != blank %}
+      <h1 class="hero-title">
+        {{ section.settings.hero_title }}
+      </h1>
+    {% endif %}
+
+    {% if section.settings.hero_image != blank %}
+      <img
+        src="{{ section.settings.hero_image | image_url: width: 800 }}"
+        class="hero-image"
+        alt="{{ section.settings.hero_image.alt | escape }}"
+        loading="eager"
+        width="{{ section.settings.hero_image.width }}"
+        height="{{ section.settings.hero_image.height }}"
+      >
+    {% endif %}
+
+    <div class="hero-bottom-text">
+      <span class="bottom-left">
+        {{ section.settings.bottom_left_text }}
+      </span>
+      <span class="bottom-right">
+        {{ section.settings.bottom_right_text }}
+      </span>
+    </div>
+  </div>
+</section>
+
+<div
+  id="customPopup-{{ sid }}"
+  class="popup-overlay"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="popup-title-{{ sid }}"
+>
+  <div class="popup-box">
+    <button class="close-btn" aria-label="Close" data-popup-close="{{ sid }}">
+      <img src="{{ 'close-icon.svg' | asset_url }}" alt="">
+    </button>
+
+    {% if section.settings.popup_top_image != blank %}
+      <img
+        src="{{ section.settings.popup_top_image | image_url: width: 400 }}"
+        class="popup-top-image"
+        alt="{{ section.settings.popup_top_image.alt | escape }}"
+      >
+    {% endif %}
+
+    <h2 id="popup-title-{{ sid }}">{{ section.settings.popup_title }}</h2>
+    <h3>{{ section.settings.popup_sub_title }}</h3>
+
+    <!-- SLOT MACHINE -->
+    <div class="slot-machine" style="background-image: url({{ 'spin-game-bg.svg' | asset_url }});">
+      <div class="reel"><div class="reel-inner" id="reel1-{{ sid }}"></div></div>
+      <div class="reel"><div class="reel-inner" id="reel2-{{ sid }}"></div></div>
+      <div class="reel"><div class="reel-inner" id="reel3-{{ sid }}"></div></div>
+    </div>
+
+    <!-- FORM -->
+    <div id="formBlock-{{ sid }}">
+      <form id="spinForm-{{ sid }}">
+        <input
+          type="text"
+          name="name"
+          id="spinName-{{ sid }}"
+          placeholder="NAME*"
+          required
+          value="{{ customer.first_name | default: '' }}"
+        >
+        <input
+          type="email"
+          name="email"
+          id="spinEmail-{{ sid }}"
+          placeholder="EMAIL*"
+          required
+          value="{{ customer.email | default: '' }}"
+        >
+        <div class="popup-buttons">
+          <button type="submit" id="spinSubmitBtn-{{ sid }}" class="primary-btn">
+            {{ section.settings.signup_button_text | default: 'Sign me up' }}
+          </button>
+          <button type="button" class="secondary-btn" data-popup-close="{{ sid }}">
+            {{ section.settings.no_button_text }}
+          </button>
+        </div>
+      </form>
+      <p class="legal-text">{{ section.settings.legal_text }}</p>
+    </div>
+
+    <!-- WIN SCREEN -->
+    <div id="winBlock-{{ sid }}" class="winblock-card" style="display:none;">
+      <h3 id="winTitle-{{ sid }}">YOU WIN!</h3>
+      <p id="couponSubtext-{{ sid }}" style="font-size:12px; opacity:0.7; margin-bottom:6px;"></p>
+
+      <!-- Expiry badge -->
+      <p id="couponExpiry-{{ sid }}" style="display:none; font-size:11px; color:#6B0F1A;
+         opacity:0.6; margin-bottom:12px; letter-spacing:1px;"></p>
+
+      <div class="coupon-box">
+        <div id="couponCodeSection-{{ sid }}" class="coupon-code" style="flex-direction:column;">
+          <p>Your Coupon Code:</p>
+          <div style="display:flex; justify-content:center; align-items:center; gap:14px;">
+            <span id="couponCode-{{ sid }}"></span>
+            <div style="display:flex; justify-content:center; gap:8px;">
+              <button id="copyBtn-{{ sid }}" class="primary-btn" type="button">COPY</button>
+              <div id="copiedMsg-{{ sid }}" class="secondary-btn" style="display:none;">COPIED</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Auto-apply checkout button -->
+        <button
+          id="shopNowBtn-{{ sid }}"
+          class="secondary-btn"
+          style="margin-top:10px; width:100%; padding:12px 15px; font-size:14px;"
+        >
+          SHOP NOW - CODE AUTO-APPLIED
+        </button>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+(function() {
+  // ── Section namespace ──────────────────────────────────────────────────────
+  var _s = '{{ sid }}';
+  function $id(id) { return document.getElementById(id + '-' + _s); }
+
+  var COUPON_PREFIX = 'LUCKY';
+
+  // ── Customer state injected from Liquid ───────────────────────────────────
+  window.SHOP = {
+    customerId: "{{ customer.id | default: '' }}",
+    loggedIn:   {% if customer %}true{% else %}false{% endif %},
+    hasSpun:    {% if customer.metafields.spin_wheel.coupon %}true{% else %}false{% endif %}
+  };
+
+  // ── Asset URLs ─────────────────────────────────────────────────────────────
+  var LOGO_URL = "{{ 'spin-logo.png' | asset_url }}";
+  var STAR_URL = "{{ 'cross-red.svg' | asset_url }}";
+  var ITEM_H   = 48;
+
+  // ── Focus management ───────────────────────────────────────────────────────
+  var _lastFocus = null;
+
+  function getFocusable() {
+    return Array.prototype.slice.call(
+      $id('customPopup').querySelectorAll(
+        'button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      )
+    );
+  }
+
+  function trapFocus(e) {
+    if (e.key === 'Escape') { closePopup(); return; }
+    if (e.key !== 'Tab') return;
+
+    var focusable = getFocusable();
+    if (!focusable.length) return;
+    var first = focusable[0];
+    var last  = focusable[focusable.length - 1];
+
+    if (e.shiftKey) {
+      if (document.activeElement === first) { e.preventDefault(); last.focus(); }
+    } else {
+      if (document.activeElement === last)  { e.preventDefault(); first.focus(); }
+    }
+  }
+
+  // ── Open / Close ───────────────────────────────────────────────────────────
+  function openPopup() {
+    var popup = $id('customPopup');
+    popup.style.display = 'flex';
+    _lastFocus = document.activeElement;
+    var focusable = getFocusable();
+    if (focusable.length) focusable[0].focus();
+    document.addEventListener('keydown', trapFocus);
+  }
+
+  function closePopup() {
+    $id('customPopup').style.display = 'none';
+    sessionStorage.setItem('sp_closed', '1');
+    document.removeEventListener('keydown', trapFocus);
+    if (_lastFocus) { _lastFocus.focus(); _lastFocus = null; }
+  }
+
+  // ── localStorage helpers ───────────────────────────────────────────────────
+  function saveToLocal(code, discount, expiresAt, customerId, email) {
+    localStorage.setItem('sp_code',        code);
+    localStorage.setItem('sp_discount',    String(discount));
+    localStorage.setItem('sp_expires_at',  expiresAt || '');
+    localStorage.setItem('sp_customer_id', customerId || '');
+    localStorage.setItem('sp_email',       email || '');
+  }
+
+  function clearLocal() {
+    localStorage.removeItem('sp_code');
+    localStorage.removeItem('sp_discount');
+    localStorage.removeItem('sp_expires_at');
+    localStorage.removeItem('sp_customer_id');
+    localStorage.removeItem('sp_email');
+    localStorage.removeItem('sp_reels');
+  }
+
+  // Returns {code, discount} if valid and not expired, else null
+  function getValidLocalCode() {
+    var code      = localStorage.getItem('sp_code');
+    var discount  = localStorage.getItem('sp_discount');
+    var expiresAt = localStorage.getItem('sp_expires_at');
+
+    if (!code || !discount) return null;
+
+    if (code === 'CHECK YOUR EMAIL' || !code.startsWith(COUPON_PREFIX) || code.length < 8) {
+      clearLocal();
+      return null;
+    }
+
+    if (expiresAt) {
+      var expiry = new Date(expiresAt);
+      if (new Date() > expiry) { clearLocal(); return null; }
+    }
+
+    return { code: code, discount: discount };
+  }
+
+  // ── Reset win screen UI to default visible state ───────────────────────────
+  function resetWinScreen() {
+    $id('couponCodeSection').style.display = 'flex';
+    $id('copyBtn').style.display           = 'inline-block';
+    $id('copiedMsg').style.display         = 'none';
+    $id('couponExpiry').style.display      = 'none';
+    $id('shopNowBtn').style.display        = 'block';
+    $id('shopNowBtn').innerText            = 'SHOP NOW - CODE AUTO-APPLIED';
+    $id('couponCode').innerText            = '';
+  }
+
+  // ── Reel helpers ───────────────────────────────────────────────────────────
+  function createInitialReels() {
+    for (var i = 1; i <= 3; i++) {
+      var reel = $id('reel' + i);
+      var html = '';
+      for (var j = 0; j < 8; j++) {
+        html += '<div><img src="' + LOGO_URL + '"></div>';
+      }
+      reel.innerHTML    = html;
+      reel.style.transition = 'none';
+      reel.style.transform  = 'translateY(0px)';
+    }
+  }
+
+  // Returns the reel arrangement for a given discount + coupon code.
+  // Uses the last char of the code as a stable seed → same code always shows same arrangement.
+  // 10% → 1 logo in one of 3 positions; 20% → 2 logos; 30% → all logos.
+  function reelsForCode(discount, code) {
+    var logoCount = Math.round(parseInt(discount, 10) / 10);
+    if (logoCount <= 0) logoCount = 1; // guard against 0 / NaN
+    if (logoCount >= 3) return [LOGO_URL, LOGO_URL, LOGO_URL];
+    var arrangements = logoCount === 1
+      ? [[LOGO_URL, STAR_URL, STAR_URL], [STAR_URL, LOGO_URL, STAR_URL], [STAR_URL, STAR_URL, LOGO_URL]]
+      : [[STAR_URL, LOGO_URL, LOGO_URL], [LOGO_URL, STAR_URL, LOGO_URL], [LOGO_URL, LOGO_URL, STAR_URL]];
+    var idx = code ? (code.charCodeAt(code.length - 1) % 3) : 0;
+    return arrangements[idx];
+  }
+
+  // Snap reels to a known stopped position (NO animation)
+  function setReelsToResult(reelsResult) {
+    for (var i = 1; i <= 3; i++) {
+      var reel = $id('reel' + i);
+      var html = '';
+      for (var j = 0; j < 10; j++) {
+        html += '<div><img src="' + (Math.random() > 0.5 ? LOGO_URL : STAR_URL) + '"></div>';
+      }
+      html += '<div><img src="' + reelsResult[i - 1] + '"></div>';
+      reel.innerHTML = html;
+
+      var move = (reel.children.length - 1) * ITEM_H;
+      reel.style.transition = 'none';
+      reel.style.transform  = 'translateY(-' + move + 'px)';
+    }
+  }
+
+  // ── Show blocks ────────────────────────────────────────────────────────────
+  function showFormBlock() {
+    $id('winBlock').style.display  = 'none';
+    $id('formBlock').style.display = 'block';
+  }
+
+  // ── Show win screen ────────────────────────────────────────────────────────
+  function showWinScreen(code, discount, isExisting) {
+    $id('formBlock').style.display = 'none';
+    $id('winBlock').style.display  = 'flex';
+
+    resetWinScreen();
+
+    if (isExisting) {
+      $id('winTitle').innerText      = 'YOUR SAVED ' + discount + '% DISCOUNT';
+      $id('couponSubtext').innerText = 'You already claimed this — use it at checkout!';
+    } else {
+      $id('winTitle').innerText      = 'YOU WIN! ' + discount + '% OFF';
+      $id('couponSubtext').innerText = 'Copy your code and use it at checkout.';
+    }
+
+    $id('couponCode').innerText = code;
+
+    var expiresAt = localStorage.getItem('sp_expires_at');
+    var expiryEl  = $id('couponExpiry');
+    if (expiresAt && expiryEl) {
+      var expiry   = new Date(expiresAt);
+      var now      = new Date();
+      var daysLeft = Math.ceil((expiry - now) / (1000 * 60 * 60 * 24));
+      if (daysLeft > 0) {
+        expiryEl.innerText     = 'Expires in ' + daysLeft + (daysLeft === 1 ? ' day' : ' days');
+        expiryEl.style.display = 'block';
+        expiryEl.style.color   = '#6B0F1A';
+      } else {
+        expiryEl.innerText     = 'Code expired';
+        expiryEl.style.color   = 'red';
+        expiryEl.style.display = 'block';
+      }
+    }
+
+    $id('shopNowBtn').onclick = function() {
+      window.location.href = '/discount/' + encodeURIComponent(code) + '?redirect=/collections/all';
+    };
+  }
+
+  // ── Fetch existing coupon for guest by email ───────────────────────────────
+  function fetchAndShowGuestCodeByEmail(email) {
+    if (!email) { showAlreadyClaimedScreen(); return; }
+
+    fetch('/tools/spin/api/coupon?email=' + encodeURIComponent(email))
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (!data.coupon) { showAlreadyClaimedScreen(); return; }
+
+      if (data.coupon.used) {
+        setReelsToResult(reelsForCode(data.coupon.discount, data.coupon.code));
+        showRedeemedScreen(data.coupon.discount);
+      } else {
+        saveToLocal(data.coupon.code, data.coupon.discount, data.coupon.expires_at, '', email);
+        setReelsToResult(reelsForCode(data.coupon.discount, data.coupon.code));
+        showWinScreen(data.coupon.code, data.coupon.discount, true);
+      }
+    })
+    .catch(function() { showAlreadyClaimedScreen(); });
+  }
+
+  // ── Show already claimed screen (guest, no code in localStorage) ──────────
+  function showAlreadyClaimedScreen() {
+    $id('formBlock').style.display             = 'none';
+    $id('winBlock').style.display              = 'flex';
+    resetWinScreen();
+    $id('winTitle').innerText                  = 'Already Claimed!';
+    $id('couponSubtext').innerText             = '';
+    $id('couponCodeSection').style.display     = 'none';
+    $id('shopNowBtn').style.display            = 'none';
+    $id('couponExpiry').style.display          = 'none';
+  }
+
+  // ── Show redeemed screen (code already used at checkout) ──────────────────
+  function showRedeemedScreen(discount) {
+    $id('formBlock').style.display             = 'none';
+    $id('winBlock').style.display              = 'flex';
+    resetWinScreen();
+    $id('winTitle').innerText                  = 'YOU USED YOUR ' + discount + '% DISCOUNT!';
+    $id('couponSubtext').innerText             = 'Glad you grabbed it! Stay tuned for future offers.';
+    $id('couponCodeSection').style.display     = 'none';
+    $id('couponExpiry').style.display          = 'none';
+
+    var btn       = $id('shopNowBtn');
+    btn.innerText = 'BROWSE OUR STORE';
+    btn.onclick   = function() { window.location.href = '/collections/all'; };
+  }
+
+  // ── Verify saved guest code against backend ────────────────────────────────
+  function verifyAndShowGuestCode(saved, onOpen) {
+    var savedCustomerId = localStorage.getItem('sp_customer_id');
+    var savedEmail      = localStorage.getItem('sp_email');
+
+    var verifyUrl = savedCustomerId
+      ? '/tools/spin/api/coupon?customerId=' + savedCustomerId
+      : savedEmail
+        ? '/tools/spin/api/coupon?email=' + encodeURIComponent(savedEmail)
+        : null;
+
+    if (!verifyUrl) {
+      if (onOpen) openPopup();
+      setReelsToResult(reelsForCode(saved.discount, saved.code));
+      showWinScreen(saved.code, saved.discount, true);
+      return;
+    }
+
+    fetch(verifyUrl)
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (onOpen) openPopup();
+
+      if (!data.coupon) {
+        clearLocal();
+        createInitialReels();
+        showFormBlock();
+        setupFormSubmit();
+        return;
+      }
+
+      if (data.coupon.used) {
+        clearLocal();
+        setReelsToResult(reelsForCode(data.coupon.discount, data.coupon.code));
+        showRedeemedScreen(data.coupon.discount);
+        return;
+      }
+
+      setReelsToResult(reelsForCode(saved.discount, saved.code));
+      showWinScreen(saved.code, saved.discount, true);
+    })
+    .catch(function() {
+      if (onOpen) openPopup();
+      setReelsToResult(reelsForCode(saved.discount, saved.code));
+      showWinScreen(saved.code, saved.discount, true);
+    });
+  }
+
+  // ── Animate reels to a known result, then call onComplete ─────────────────
+  function animateReelsToResult(reelsResult, onComplete) {
+    for (var i = 1; i <= 3; i++) {
+      var reel = $id('reel' + i);
+      var html = '';
+
+      for (var j = 0; j < 10; j++) {
+        html += '<div><img src="' + (Math.random() > 0.5 ? LOGO_URL : STAR_URL) + '"></div>';
+      }
+      html += '<div><img src="' + reelsResult[i - 1] + '"></div>';
+      reel.innerHTML = html;
+
+      var totalItems = reel.children.length;
+      var move       = (totalItems - 1) * ITEM_H;
+
+      reel.style.transition = 'none';
+      reel.style.transform  = 'translateY(0px)';
+      void reel.offsetHeight; // force reflow before transition
+
+      ;(function(reelEl, moveVal, delay) {
+        setTimeout(function() {
+          reelEl.style.transition = 'transform 2.5s ease-out';
+          reelEl.style.transform  = 'translateY(-' + moveVal + 'px)';
+        }, delay);
+      })(reel, move, i * 80);
+    }
+
+    setTimeout(onComplete, 240 + 2500);
+  }
+
+  // ── Show generic error state ───────────────────────────────────────────────
+  function showErrorScreen(message) {
+    $id('formBlock').style.display         = 'none';
+    $id('winBlock').style.display          = 'flex';
+    resetWinScreen();
+    $id('winTitle').innerText              = 'Something went wrong';
+    $id('couponSubtext').innerText         = message || 'Please try again.';
+    $id('couponCodeSection').style.display = 'none';
+    $id('shopNowBtn').style.display        = 'none';
+  }
+
+  // ── Spin: call API first, then animate to the server's result ─────────────
+  function startSpin(name, email) {
+    var btn       = $id('spinSubmitBtn');
+    btn.disabled  = true;
+    btn.innerText = 'Spinning...';
+
+    fetch('/tools/spin/api/spin', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ firstName: name, email: email })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+
+      if (data.success) {
+        saveToLocal(data.code, data.discount, data.expires_at, data.customerId, email);
+        sessionStorage.setItem('sp_claimed', '1');
+
+        animateReelsToResult(reelsForCode(data.discount, data.code), function() {
+          showWinScreen(data.code, data.discount, false);
+        });
+
+      } else if (data.error === 'You have already claimed a discount.') {
+        if (window.SHOP.loggedIn && window.SHOP.customerId) {
+          fetchAndShowExistingCode();
+        } else {
+          var saved = getValidLocalCode();
+          if (saved) {
+            verifyAndShowGuestCode(saved, false);
+          } else {
+            fetchAndShowGuestCodeByEmail($id('spinEmail').value.trim());
+          }
+        }
+
+      } else {
+        showErrorScreen(data.error);
+        btn.disabled  = false;
+        btn.innerText = 'Sign me up';
+      }
+
+    })
+    .catch(function() {
+      showErrorScreen('Connection error. Please try again later.');
+      btn.disabled  = false;
+      btn.innerText = 'Sign me up';
+    });
+  }
+
+  // ── Fetch existing code for logged-in customer ─────────────────────────────
+  function fetchAndShowExistingCode() {
+    fetch('/tools/spin/api/coupon?customerId=' + window.SHOP.customerId)
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+
+      if (!data.coupon) {
+        createInitialReels();
+        showFormBlock();
+        setupFormSubmit();
+        return;
+      }
+
+      if (data.coupon.used) {
+        setReelsToResult(reelsForCode(data.coupon.discount, data.coupon.code));
+        showRedeemedScreen(data.coupon.discount);
+      } else {
+        saveToLocal(data.coupon.code, data.coupon.discount, data.coupon.expires_at, window.SHOP.customerId);
+        setReelsToResult(reelsForCode(data.coupon.discount, data.coupon.code));
+        showWinScreen(data.coupon.code, data.coupon.discount, true);
+      }
+
+    })
+    .catch(function() { closePopup(); });
+  }
+
+  // ── Copy code ──────────────────────────────────────────────────────────────
+  function fallbackCopy(text) {
+    var ta           = document.createElement('textarea');
+    ta.value         = text;
+    ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0;';
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    try { document.execCommand('copy'); } catch (e) {}
+    document.body.removeChild(ta);
+  }
+
+  function copyCode() {
+    var code = $id('couponCode').innerText;
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(code).catch(function() { fallbackCopy(code); });
+    } else {
+      fallbackCopy(code);
+    }
+    $id('copyBtn').style.display   = 'none';
+    $id('copiedMsg').style.display = 'inline-flex';
+  }
+
+  // ── Setup form submit ──────────────────────────────────────────────────────
+  function setupFormSubmit() {
+    var form = $id('spinForm');
+    if (!form || form.dataset.listenerAdded) return;
+    form.dataset.listenerAdded = 'true';
+
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+      var name  = $id('spinName').value.trim();
+      var email = $id('spinEmail').value.trim();
+      if (!name || !email) { alert('Please fill in all fields.'); return; }
+      startSpin(name, email);
+    });
+  }
+
+  // ── Setup trigger button ───────────────────────────────────────────────────
+  function setupTriggerButton() {
+    var trigger = document.querySelector('[data-popup-trigger="{{ sid }}"]');
+    if (!trigger || trigger.dataset.listenerAdded) return;
+    trigger.dataset.listenerAdded = 'true';
+
+    trigger.addEventListener('click', function(e) {
+      e.preventDefault();
+      openPopup();
+
+      if (window.SHOP.loggedIn && window.SHOP.hasSpun) {
+        fetchAndShowExistingCode();
+        return;
+      }
+
+      var saved = getValidLocalCode();
+      if (saved) {
+        verifyAndShowGuestCode(saved, false);
+        return;
+      }
+
+      createInitialReels();
+      showFormBlock();
+      setupFormSubmit();
+    });
+  }
+
+  // ── Setup close + copy buttons ─────────────────────────────────────────────
+  function setupStaticButtons() {
+    var closeBtns = document.querySelectorAll('[data-popup-close="{{ sid }}"]');
+    for (var i = 0; i < closeBtns.length; i++) {
+      closeBtns[i].addEventListener('click', closePopup);
+    }
+    $id('copyBtn').addEventListener('click', copyCode);
+  }
+
+  // ── On page load ───────────────────────────────────────────────────────────
+  document.addEventListener('DOMContentLoaded', function() {
+
+    setupTriggerButton();
+    setupStaticButtons();
+
+    // CASE 1: Logged-in + already spun → NO auto-popup
+    if (window.SHOP.loggedIn && window.SHOP.hasSpun) return;
+
+    // CASE 2: Guest with valid saved code → NO auto-popup
+    var saved = getValidLocalCode();
+    if (saved) return;
+
+    // CASE 3: Closed popup this session → don't auto-show
+    if (sessionStorage.getItem('sp_closed')) return;
+
+    // CASE 4: Fresh visitor → auto-show after 3s
+    setTimeout(function() {
+      createInitialReels();
+      openPopup();
+      setupFormSubmit();
+    }, 3000);
+
+  });
+
+})();
+</script>
+
+{% schema %}
+{
+  "name": "Custom Hero With Popup",
+  "settings": [
+    {
+      "type": "image_picker",
+      "id": "bg_image",
+      "label": "Background Image"
+    },
+    {
+      "type": "text",
+      "id": "popup_trigger_text",
+      "label": "Popup Trigger Text"
+    },
+    {
+      "type": "textarea",
+      "id": "hero_title",
+      "label": "Hero Title"
+    },
+    {
+      "type": "image_picker",
+      "id": "hero_image",
+      "label": "Hero Image"
+    },
+    {
+      "type": "text",
+      "id": "bottom_left_text",
+      "label": "Bottom Left Text"
+    },
+    {
+      "type": "text",
+      "id": "bottom_right_text",
+      "label": "Bottom Right Text"
+    },
+    {
+      "type": "image_picker",
+      "id": "popup_top_image",
+      "label": "Top Image"
+    },
+    {
+      "type": "text",
+      "id": "popup_title",
+      "label": "Popup Title",
+      "default": "FEELING LUCKY? SPIN TO WIN"
+    },
+    {
+      "type": "text",
+      "id": "popup_sub_title",
+      "label": "Popup Sub Title",
+      "default": "SPIN TO WIN UP TO 30% OFF MERCH."
+    },
+    {
+      "type": "text",
+      "id": "signup_button_text",
+      "label": "Signup Button",
+      "default": "SIGN ME UP"
+    },
+    {
+      "type": "text",
+      "id": "no_button_text",
+      "label": "No Button",
+      "default": "NO THANKS"
+    },
+    {
+      "type": "textarea",
+      "id": "legal_text",
+      "label": "Legal Text"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Custom Hero With Popup"
+    }
+  ]
+}
+{% endschema %}
