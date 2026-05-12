@@ -161,7 +161,7 @@
       $id('customPopup').querySelectorAll(
         'button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])'
       )
-    );
+    ).filter(function(el) { return el.offsetParent !== null; });
   }
 
   function trapFocus(e) {
@@ -242,9 +242,11 @@
     $id('copyBtn').style.display           = 'inline-block';
     $id('copiedMsg').style.display         = 'none';
     $id('couponExpiry').style.display      = 'none';
-    $id('shopNowBtn').style.display        = 'block';
-    $id('shopNowBtn').innerText            = 'SHOP NOW - CODE AUTO-APPLIED';
     $id('couponCode').innerText            = '';
+    var shopBtn       = $id('shopNowBtn');
+    shopBtn.style.display = 'block';
+    shopBtn.innerText     = 'SHOP NOW - CODE AUTO-APPLIED';
+    shopBtn.onclick       = null;
   }
 
   // ── Reel helpers ───────────────────────────────────────────────────────────
@@ -510,15 +512,11 @@
 
       } else {
         showErrorScreen(data.error);
-        btn.disabled  = false;
-        btn.innerText = 'Sign me up';
       }
 
     })
     .catch(function() {
       showErrorScreen('Connection error. Please try again later.');
-      btn.disabled  = false;
-      btn.innerText = 'Sign me up';
     });
   }
 
