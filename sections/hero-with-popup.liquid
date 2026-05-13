@@ -1,9 +1,8 @@
-{% assign sid = section.id %}
-
-<section class="hero-section" style="background-image: url({{ section.settings.bg_image | image_url: width: 1920 }});">
+<section class="hero-section" style="background-image: url({{ section.settings.bg_image | image_url}});">
   <div class="hero-content">
     {% if section.settings.popup_trigger_text != blank %}
-      <p class="popup-trigger" data-popup-trigger="{{ sid }}">
+      <!-- onclick removed — JS handles this via setupTriggerButton() -->
+      <p class="popup-trigger">
         {{ section.settings.popup_trigger_text }}
       </p>
     {% endif %}
@@ -15,14 +14,7 @@
     {% endif %}
 
     {% if section.settings.hero_image != blank %}
-      <img
-        src="{{ section.settings.hero_image | image_url: width: 800 }}"
-        class="hero-image"
-        alt="{{ section.settings.hero_image.alt | escape }}"
-        loading="eager"
-        width="{{ section.settings.hero_image.width }}"
-        height="{{ section.settings.hero_image.height }}"
-      >
+      <img src="{{ section.settings.hero_image | image_url }}" class="hero-image" alt="Hero Image">
     {% endif %}
 
     <div class="hero-bottom-text">
@@ -36,43 +28,33 @@
   </div>
 </section>
 
-<div
-  id="customPopup-{{ sid }}"
-  class="popup-overlay"
-  role="dialog"
-  aria-modal="true"
-  aria-labelledby="popup-title-{{ sid }}"
->
+<div id="customPopup" class="popup-overlay">
   <div class="popup-box">
-    <button class="close-btn" aria-label="Close" data-popup-close="{{ sid }}">
-      <img src="{{ 'close-icon.svg' | asset_url }}" alt="">
+    <button class="close-btn" onclick="closePopup()">
+      <img src="{{ 'close-icon.svg' | asset_url}}" alt="">
     </button>
 
     {% if section.settings.popup_top_image != blank %}
-      <img
-        src="{{ section.settings.popup_top_image | image_url: width: 400 }}"
-        class="popup-top-image"
-        alt="{{ section.settings.popup_top_image.alt | escape }}"
-      >
+      <img src="{{ section.settings.popup_top_image | image_url }}" class="popup-top-image">
     {% endif %}
 
-    <h2 id="popup-title-{{ sid }}">{{ section.settings.popup_title }}</h2>
+    <h2>{{ section.settings.popup_title }}</h2>
     <h3>{{ section.settings.popup_sub_title }}</h3>
 
     <!-- SLOT MACHINE -->
     <div class="slot-machine" style="background-image: url({{ 'spin-game-bg.svg' | asset_url }});">
-      <div class="reel"><div class="reel-inner" id="reel1-{{ sid }}"></div></div>
-      <div class="reel"><div class="reel-inner" id="reel2-{{ sid }}"></div></div>
-      <div class="reel"><div class="reel-inner" id="reel3-{{ sid }}"></div></div>
+      <div class="reel"><div class="reel-inner" id="reel1"></div></div>
+      <div class="reel"><div class="reel-inner" id="reel2"></div></div>
+      <div class="reel"><div class="reel-inner" id="reel3"></div></div>
     </div>
 
     <!-- FORM -->
-    <div id="formBlock-{{ sid }}">
-      <form id="spinForm-{{ sid }}">
+    <div id="formBlock">
+      <form id="spinForm">
         <input
           type="text"
           name="name"
-          id="spinName-{{ sid }}"
+          id="spinName"
           placeholder="NAME*"
           required
           value="{{ customer.first_name | default: '' }}"
@@ -80,16 +62,16 @@
         <input
           type="email"
           name="email"
-          id="spinEmail-{{ sid }}"
+          id="spinEmail"
           placeholder="EMAIL*"
           required
           value="{{ customer.email | default: '' }}"
         >
         <div class="popup-buttons">
-          <button type="submit" id="spinSubmitBtn-{{ sid }}" class="primary-btn">
+          <button type="submit" id="spinSubmitBtn" class="primary-btn">
             {{ section.settings.signup_button_text | default: 'Sign me up' }}
           </button>
-          <button type="button" class="secondary-btn" data-popup-close="{{ sid }}">
+          <button type="button" class="secondary-btn" onclick="closePopup()">
             {{ section.settings.no_button_text }}
           </button>
         </div>
@@ -98,29 +80,30 @@
     </div>
 
     <!-- WIN SCREEN -->
-    <div id="winBlock-{{ sid }}" class="winblock-card" style="display:none;">
-      <h3 id="winTitle-{{ sid }}">YOU WIN!</h3>
-      <p id="couponSubtext-{{ sid }}" style="font-size:12px; opacity:0.7; margin-bottom:6px;"></p>
+    <div id="winBlock" class="winblock-card" style="display:none;">
+      <h3 id="winTitle">YOU WIN!</h3>
+      <p id="couponSubtext" style="font-size:12px; opacity:0.7; margin-bottom:6px;"></p>
 
       <!-- Expiry badge -->
-      <p id="couponExpiry-{{ sid }}" style="display:none; font-size:11px; color:#6B0F1A;
+      <p id="couponExpiry" style="display:none; font-size:11px; color:#6B0F1A;
          opacity:0.6; margin-bottom:12px; letter-spacing:1px;"></p>
 
       <div class="coupon-box">
-        <div id="couponCodeSection-{{ sid }}" class="coupon-code" style="flex-direction:column;">
+        <!-- coupon-code section — hidden for Already Claimed / error states -->
+        <div id="couponCodeSection" class="coupon-code" style="flex-direction:column;">
           <p>Your Coupon Code:</p>
           <div style="display:flex; justify-content:center; align-items:center; gap:14px;">
-            <span id="couponCode-{{ sid }}"></span>
+            <span id="couponCode"></span>
             <div style="display:flex; justify-content:center; gap:8px;">
-              <button id="copyBtn-{{ sid }}" class="primary-btn" type="button">COPY</button>
-              <div id="copiedMsg-{{ sid }}" class="secondary-btn" style="display:none;">COPIED</div>
+              <button id="copyBtn" class="primary-btn" type="button" onclick="copyCode()">COPY</button>
+              <div id="copiedMsg" class="secondary-btn" style="display:none;">COPIED</div>
             </div>
           </div>
         </div>
 
         <!-- Auto-apply checkout button -->
         <button
-          id="shopNowBtn-{{ sid }}"
+          id="shopNowBtn"
           class="secondary-btn"
           style="margin-top:10px; width:100%; padding:12px 15px; font-size:14px;"
         >
@@ -134,13 +117,6 @@
 </div>
 
 <script>
-(function() {
-  // ── Section namespace ──────────────────────────────────────────────────────
-  var _s = '{{ sid }}';
-  function $id(id) { return document.getElementById(id + '-' + _s); }
-
-  var COUPON_PREFIX = 'LUCKY';
-
   // ── Customer state injected from Liquid ───────────────────────────────────
   window.SHOP = {
     customerId: "{{ customer.id | default: '' }}",
@@ -153,48 +129,14 @@
   var STAR_URL = "{{ 'cross-red.svg' | asset_url }}";
   var ITEM_H   = 48;
 
-  // ── Focus management ───────────────────────────────────────────────────────
-  var _lastFocus = null;
-
-  function getFocusable() {
-    return Array.prototype.slice.call(
-      $id('customPopup').querySelectorAll(
-        'button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])'
-      )
-    ).filter(function(el) { return el.offsetParent !== null; });
-  }
-
-  function trapFocus(e) {
-    if (e.key === 'Escape') { closePopup(); return; }
-    if (e.key !== 'Tab') return;
-
-    var focusable = getFocusable();
-    if (!focusable.length) return;
-    var first = focusable[0];
-    var last  = focusable[focusable.length - 1];
-
-    if (e.shiftKey) {
-      if (document.activeElement === first) { e.preventDefault(); last.focus(); }
-    } else {
-      if (document.activeElement === last)  { e.preventDefault(); first.focus(); }
-    }
-  }
-
   // ── Open / Close ───────────────────────────────────────────────────────────
   function openPopup() {
-    var popup = $id('customPopup');
-    popup.style.display = 'flex';
-    _lastFocus = document.activeElement;
-    var focusable = getFocusable();
-    if (focusable.length) focusable[0].focus();
-    document.addEventListener('keydown', trapFocus);
+    document.getElementById('customPopup').style.display = 'flex';
   }
 
   function closePopup() {
-    $id('customPopup').style.display = 'none';
+    document.getElementById('customPopup').style.display = 'none';
     sessionStorage.setItem('sp_closed', '1');
-    document.removeEventListener('keydown', trapFocus);
-    if (_lastFocus) { _lastFocus.focus(); _lastFocus = null; }
   }
 
   // ── localStorage helpers ───────────────────────────────────────────────────
@@ -223,14 +165,19 @@
 
     if (!code || !discount) return null;
 
-    if (code === 'CHECK YOUR EMAIL' || !code.startsWith(COUPON_PREFIX) || code.length < 8) {
+    // Guard — reject placeholder values and non-LUCKY codes
+    if (code === 'CHECK YOUR EMAIL' || !code.startsWith('LUCKY') || code.length < 8) {
       clearLocal();
       return null;
     }
 
     if (expiresAt) {
       var expiry = new Date(expiresAt);
-      if (new Date() > expiry) { clearLocal(); return null; }
+      var now    = new Date();
+      if (now > expiry) {
+        clearLocal();
+        return null; // expired — auto cleared
+      }
     }
 
     return { code: code, discount: discount };
@@ -238,26 +185,23 @@
 
   // ── Reset win screen UI to default visible state ───────────────────────────
   function resetWinScreen() {
-    $id('couponCodeSection').style.display = 'flex';
-    $id('copyBtn').style.display           = 'inline-block';
-    $id('copiedMsg').style.display         = 'none';
-    $id('couponExpiry').style.display      = 'none';
-    $id('couponCode').innerText            = '';
-    var shopBtn       = $id('shopNowBtn');
-    shopBtn.style.display = 'block';
-    shopBtn.innerText     = 'SHOP NOW - CODE AUTO-APPLIED';
-    shopBtn.onclick       = null;
+    document.getElementById('couponCodeSection').style.display = 'flex';
+    document.getElementById('copyBtn').style.display           = 'inline-block';
+    document.getElementById('copiedMsg').style.display         = 'none';
+    document.getElementById('couponExpiry').style.display      = 'none';
+    document.getElementById('shopNowBtn').style.display        = 'block';
+    document.getElementById('shopNowBtn').innerText            = 'SHOP NOW - CODE AUTO-APPLIED';
+    document.getElementById('couponCode').innerText            = '';
   }
 
   // ── Reel helpers ───────────────────────────────────────────────────────────
   function createInitialReels() {
     for (var i = 1; i <= 3; i++) {
-      var reel = $id('reel' + i);
-      var html = '';
+      var reel = document.getElementById('reel' + i);
+      reel.innerHTML = '';
       for (var j = 0; j < 8; j++) {
-        html += '<div><img src="' + LOGO_URL + '"></div>';
+        reel.innerHTML += '<div><img src="' + LOGO_URL + '"></div>';
       }
-      reel.innerHTML    = html;
       reel.style.transition = 'none';
       reel.style.transform  = 'translateY(0px)';
     }
@@ -265,10 +209,9 @@
 
   // Returns the reel arrangement for a given discount + coupon code.
   // Uses the last char of the code as a stable seed → same code always shows same arrangement.
-  // 10% → 1 logo in one of 3 positions; 20% → 2 logos; 30% → all logos.
+  // 10% → 1 crown in one of 3 positions; 20% → star in one of 3 positions; 30% → all crowns.
   function reelsForCode(discount, code) {
-    var logoCount = Math.round(parseInt(discount, 10) / 10);
-    if (logoCount <= 0) logoCount = 1; // guard against 0 / NaN
+    var logoCount = Math.round(parseInt(discount) / 10);
     if (logoCount >= 3) return [LOGO_URL, LOGO_URL, LOGO_URL];
     var arrangements = logoCount === 1
       ? [[LOGO_URL, STAR_URL, STAR_URL], [STAR_URL, LOGO_URL, STAR_URL], [STAR_URL, STAR_URL, LOGO_URL]]
@@ -279,16 +222,21 @@
 
   // Snap reels to a known stopped position (NO animation)
   function setReelsToResult(reelsResult) {
-    for (var i = 1; i <= 3; i++) {
-      var reel = $id('reel' + i);
-      var html = '';
-      for (var j = 0; j < 10; j++) {
-        html += '<div><img src="' + (Math.random() > 0.5 ? LOGO_URL : STAR_URL) + '"></div>';
-      }
-      html += '<div><img src="' + reelsResult[i - 1] + '"></div>';
-      reel.innerHTML = html;
 
-      var move = (reel.children.length - 1) * ITEM_H;
+    for (var i = 1; i <= 3; i++) {
+      var reel = document.getElementById('reel' + i);
+      reel.innerHTML = '';
+
+      for (var j = 0; j < 10; j++) {
+        var img = Math.random() > 0.5 ? LOGO_URL : STAR_URL;
+        reel.innerHTML += '<div><img src="' + img + '"></div>';
+      }
+
+      reel.innerHTML += '<div><img src="' + reelsResult[i - 1] + '"></div>';
+
+      var totalItems = reel.children.length;
+      var move       = (totalItems - 1) * ITEM_H;
+
       reel.style.transition = 'none';
       reel.style.transform  = 'translateY(-' + move + 'px)';
     }
@@ -296,29 +244,30 @@
 
   // ── Show blocks ────────────────────────────────────────────────────────────
   function showFormBlock() {
-    $id('winBlock').style.display  = 'none';
-    $id('formBlock').style.display = 'block';
+    document.getElementById('winBlock').style.display  = 'none';
+    document.getElementById('formBlock').style.display = 'block';
   }
 
   // ── Show win screen ────────────────────────────────────────────────────────
   function showWinScreen(code, discount, isExisting) {
-    $id('formBlock').style.display = 'none';
-    $id('winBlock').style.display  = 'flex';
+    document.getElementById('formBlock').style.display = 'none';
+    document.getElementById('winBlock').style.display  = 'flex';
 
     resetWinScreen();
 
     if (isExisting) {
-      $id('winTitle').innerText      = 'YOUR SAVED ' + discount + '% DISCOUNT';
-      $id('couponSubtext').innerText = 'You already claimed this — use it at checkout!';
+      document.getElementById('winTitle').innerText      = 'YOUR SAVED ' + discount + '% DISCOUNT';
+      document.getElementById('couponSubtext').innerText = 'You already claimed this — use it at checkout!';
     } else {
-      $id('winTitle').innerText      = 'YOU WIN! ' + discount + '% OFF';
-      $id('couponSubtext').innerText = 'Copy your code and use it at checkout.';
+      document.getElementById('winTitle').innerText      = 'YOU WIN! ' + discount + '% OFF';
+      document.getElementById('couponSubtext').innerText = 'Copy your code and use it at checkout.';
     }
 
-    $id('couponCode').innerText = code;
+    document.getElementById('couponCode').innerText = code;
 
+    // Expiry countdown
     var expiresAt = localStorage.getItem('sp_expires_at');
-    var expiryEl  = $id('couponExpiry');
+    var expiryEl  = document.getElementById('couponExpiry');
     if (expiresAt && expiryEl) {
       var expiry   = new Date(expiresAt);
       var now      = new Date();
@@ -334,9 +283,10 @@
       }
     }
 
-    $id('shopNowBtn').onclick = function() {
-      window.location.href = '/discount/' + encodeURIComponent(code) + '?redirect=/collections/all';
+    document.getElementById('shopNowBtn').onclick = function() {
+      window.location.href = '/discount/' + code + '?redirect=/collections/all';
     };
+
   }
 
   // ── Fetch existing coupon for guest by email ───────────────────────────────
@@ -362,32 +312,39 @@
 
   // ── Show already claimed screen (guest, no code in localStorage) ──────────
   function showAlreadyClaimedScreen() {
-    $id('formBlock').style.display             = 'none';
-    $id('winBlock').style.display              = 'flex';
+    document.getElementById('formBlock').style.display = 'none';
+    document.getElementById('winBlock').style.display  = 'flex';
+
     resetWinScreen();
-    $id('winTitle').innerText                  = 'Already Claimed!';
-    $id('couponSubtext').innerText             = '';
-    $id('couponCodeSection').style.display     = 'none';
-    $id('shopNowBtn').style.display            = 'none';
-    $id('couponExpiry').style.display          = 'none';
+
+    document.getElementById('winTitle').innerText           = 'Already Claimed!';
+    document.getElementById('couponSubtext').innerText      = '';
+    document.getElementById('couponCodeSection').style.display = 'none'; // hide "Your Coupon Code:" label
+    document.getElementById('shopNowBtn').style.display     = 'none';
+    document.getElementById('couponExpiry').style.display   = 'none';
   }
 
   // ── Show redeemed screen (code already used at checkout) ──────────────────
   function showRedeemedScreen(discount) {
-    $id('formBlock').style.display             = 'none';
-    $id('winBlock').style.display              = 'flex';
-    resetWinScreen();
-    $id('winTitle').innerText                  = 'YOU USED YOUR ' + discount + '% DISCOUNT!';
-    $id('couponSubtext').innerText             = 'Glad you grabbed it! Stay tuned for future offers.';
-    $id('couponCodeSection').style.display     = 'none';
-    $id('couponExpiry').style.display          = 'none';
+    document.getElementById('formBlock').style.display = 'none';
+    document.getElementById('winBlock').style.display  = 'flex';
 
-    var btn       = $id('shopNowBtn');
+    resetWinScreen();
+
+    document.getElementById('winTitle').innerText           = 'YOU USED YOUR ' + discount + '% DISCOUNT!';
+    document.getElementById('couponSubtext').innerText      = 'Glad you grabbed it! Stay tuned for future offers.';
+    document.getElementById('couponCodeSection').style.display = 'none'; // hide code section
+    document.getElementById('couponExpiry').style.display   = 'none';
+
+    var btn       = document.getElementById('shopNowBtn');
     btn.innerText = 'BROWSE OUR STORE';
-    btn.onclick   = function() { window.location.href = '/collections/all'; };
+    btn.onclick   = function() {
+      window.location.href = '/collections/all';
+    };
   }
 
   // ── Verify saved guest code against backend ────────────────────────────────
+  // Checks if code is still valid or already redeemed
   function verifyAndShowGuestCode(saved, onOpen) {
     var savedCustomerId = localStorage.getItem('sp_customer_id');
     var savedEmail      = localStorage.getItem('sp_email');
@@ -399,6 +356,7 @@
         : null;
 
     if (!verifyUrl) {
+      // Nothing to verify against — show code without verification
       if (onOpen) openPopup();
       setReelsToResult(reelsForCode(saved.discount, saved.code));
       showWinScreen(saved.code, saved.discount, true);
@@ -411,6 +369,7 @@
       if (onOpen) openPopup();
 
       if (!data.coupon) {
+        // Code gone — clear localStorage, show fresh spin
         clearLocal();
         createInitialReels();
         showFormBlock();
@@ -419,16 +378,19 @@
       }
 
       if (data.coupon.used) {
+        // Code redeemed — clear localStorage, show redeemed screen
         clearLocal();
         setReelsToResult(reelsForCode(data.coupon.discount, data.coupon.code));
         showRedeemedScreen(data.coupon.discount);
         return;
       }
 
+      // Code still valid
       setReelsToResult(reelsForCode(saved.discount, saved.code));
       showWinScreen(saved.code, saved.discount, true);
     })
     .catch(function() {
+      // Network error — show code anyway, don't block UX
       if (onOpen) openPopup();
       setReelsToResult(reelsForCode(saved.discount, saved.code));
       showWinScreen(saved.code, saved.discount, true);
@@ -438,21 +400,22 @@
   // ── Animate reels to a known result, then call onComplete ─────────────────
   function animateReelsToResult(reelsResult, onComplete) {
     for (var i = 1; i <= 3; i++) {
-      var reel = $id('reel' + i);
-      var html = '';
+      var reel = document.getElementById('reel' + i);
+      reel.innerHTML = '';
 
       for (var j = 0; j < 10; j++) {
-        html += '<div><img src="' + (Math.random() > 0.5 ? LOGO_URL : STAR_URL) + '"></div>';
+        var img = Math.random() > 0.5 ? LOGO_URL : STAR_URL;
+        reel.innerHTML += '<div><img src="' + img + '"></div>';
       }
-      html += '<div><img src="' + reelsResult[i - 1] + '"></div>';
-      reel.innerHTML = html;
+
+      reel.innerHTML += '<div><img src="' + reelsResult[i - 1] + '"></div>';
 
       var totalItems = reel.children.length;
       var move       = (totalItems - 1) * ITEM_H;
 
       reel.style.transition = 'none';
       reel.style.transform  = 'translateY(0px)';
-      void reel.offsetHeight; // force reflow before transition
+      reel.offsetHeight;
 
       ;(function(reelEl, moveVal, delay) {
         setTimeout(function() {
@@ -462,23 +425,13 @@
       })(reel, move, i * 80);
     }
 
+    // Fire callback after last reel finishes (delay 240ms + 2500ms animation)
     setTimeout(onComplete, 240 + 2500);
-  }
-
-  // ── Show generic error state ───────────────────────────────────────────────
-  function showErrorScreen(message) {
-    $id('formBlock').style.display         = 'none';
-    $id('winBlock').style.display          = 'flex';
-    resetWinScreen();
-    $id('winTitle').innerText              = 'Something went wrong';
-    $id('couponSubtext').innerText         = message || 'Please try again.';
-    $id('couponCodeSection').style.display = 'none';
-    $id('shopNowBtn').style.display        = 'none';
   }
 
   // ── Spin: call API first, then animate to the server's result ─────────────
   function startSpin(name, email) {
-    var btn       = $id('spinSubmitBtn');
+    var btn       = document.getElementById('spinSubmitBtn');
     btn.disabled  = true;
     btn.innerText = 'Spinning...';
 
@@ -506,17 +459,29 @@
           if (saved) {
             verifyAndShowGuestCode(saved, false);
           } else {
-            fetchAndShowGuestCodeByEmail($id('spinEmail').value.trim());
+            fetchAndShowGuestCodeByEmail(document.getElementById('spinEmail').value.trim());
           }
         }
 
       } else {
-        showErrorScreen(data.error);
+        // Real backend error
+        document.getElementById('formBlock').style.display = 'none';
+        document.getElementById('winBlock').style.display  = 'flex';
+        resetWinScreen();
+        document.getElementById('winTitle').innerText           = 'Something went wrong';
+        document.getElementById('couponSubtext').innerText      = data.error || 'Please try again.';
+        document.getElementById('couponCodeSection').style.display = 'none';
+        document.getElementById('shopNowBtn').style.display     = 'none';
+        btn.disabled  = false;
+        btn.innerText = 'Sign me up';
       }
 
     })
     .catch(function() {
-      showErrorScreen('Connection error. Please try again later.');
+      document.getElementById('winTitle').innerText   = 'Connection Error';
+      document.getElementById('couponCode').innerText = 'Please try again later.';
+      btn.disabled  = false;
+      btn.innerText = 'Sign me up';
     });
   }
 
@@ -547,46 +512,34 @@
   }
 
   // ── Copy code ──────────────────────────────────────────────────────────────
-  function fallbackCopy(text) {
-    var ta           = document.createElement('textarea');
-    ta.value         = text;
-    ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0;';
-    document.body.appendChild(ta);
-    ta.focus();
-    ta.select();
-    try { document.execCommand('copy'); } catch (e) {}
-    document.body.removeChild(ta);
-  }
-
   function copyCode() {
-    var code = $id('couponCode').innerText;
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(code).catch(function() { fallbackCopy(code); });
-    } else {
-      fallbackCopy(code);
-    }
-    $id('copyBtn').style.display   = 'none';
-    $id('copiedMsg').style.display = 'inline-flex';
+    var code = document.getElementById('couponCode').innerText;
+    navigator.clipboard.writeText(code);
+    document.getElementById('copyBtn').style.display   = 'none';
+    document.getElementById('copiedMsg').style.display = 'inline-flex';
   }
 
   // ── Setup form submit ──────────────────────────────────────────────────────
   function setupFormSubmit() {
-    var form = $id('spinForm');
+    var form = document.getElementById('spinForm');
     if (!form || form.dataset.listenerAdded) return;
     form.dataset.listenerAdded = 'true';
 
     form.addEventListener('submit', function(e) {
       e.preventDefault();
-      var name  = $id('spinName').value.trim();
-      var email = $id('spinEmail').value.trim();
-      if (!name || !email) { alert('Please fill in all fields.'); return; }
+      var name  = document.getElementById('spinName').value.trim();
+      var email = document.getElementById('spinEmail').value.trim();
+      if (!name || !email) {
+        alert('Please fill in all fields.');
+        return;
+      }
       startSpin(name, email);
     });
   }
 
   // ── Setup trigger button ───────────────────────────────────────────────────
   function setupTriggerButton() {
-    var trigger = document.querySelector('[data-popup-trigger="{{ sid }}"]');
+    var trigger = document.querySelector('.popup-trigger');
     if (!trigger || trigger.dataset.listenerAdded) return;
     trigger.dataset.listenerAdded = 'true';
 
@@ -594,44 +547,42 @@
       e.preventDefault();
       openPopup();
 
+      // Logged-in + already spun → fetch from backend
       if (window.SHOP.loggedIn && window.SHOP.hasSpun) {
         fetchAndShowExistingCode();
         return;
       }
 
+      // Guest with saved valid code → verify with backend then show
       var saved = getValidLocalCode();
       if (saved) {
         verifyAndShowGuestCode(saved, false);
         return;
       }
 
+      // Fresh → show spin form
       createInitialReels();
       showFormBlock();
       setupFormSubmit();
     });
   }
 
-  // ── Setup close + copy buttons ─────────────────────────────────────────────
-  function setupStaticButtons() {
-    var closeBtns = document.querySelectorAll('[data-popup-close="{{ sid }}"]');
-    for (var i = 0; i < closeBtns.length; i++) {
-      closeBtns[i].addEventListener('click', closePopup);
-    }
-    $id('copyBtn').addEventListener('click', copyCode);
-  }
-
   // ── On page load ───────────────────────────────────────────────────────────
   document.addEventListener('DOMContentLoaded', function() {
 
     setupTriggerButton();
-    setupStaticButtons();
 
     // CASE 1: Logged-in + already spun → NO auto-popup
-    if (window.SHOP.loggedIn && window.SHOP.hasSpun) return;
+    if (window.SHOP.loggedIn && window.SHOP.hasSpun) {
+      return;
+    }
 
     // CASE 2: Guest with valid saved code → NO auto-popup
+    // Trigger button handles verification + display
     var saved = getValidLocalCode();
-    if (saved) return;
+    if (saved) {
+      return;
+    }
 
     // CASE 3: Closed popup this session → don't auto-show
     if (sessionStorage.getItem('sp_closed')) return;
@@ -644,8 +595,6 @@
     }, 3000);
 
   });
-
-})();
 </script>
 
 {% schema %}
@@ -715,6 +664,12 @@
       "type": "textarea",
       "id": "legal_text",
       "label": "Legal Text"
+    },
+    {
+      "type": "number",
+      "id": "discount_percentage",
+      "label": "Discount Percentage",
+      "default": 25
     }
   ],
   "presets": [
